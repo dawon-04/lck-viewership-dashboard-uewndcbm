@@ -123,7 +123,7 @@ const TEAM_NOTES = {
   },
   "DN SOOPers": {
     nameKo: "DN 수퍼스",
-    note: "광동 프릭스 → DN Freecs → DN SOOPers 순으로 리브랜딩(구 약어: DNF/DNS). 스트리밍 플랫폼 SOOP과 파트너십 연계.",
+    note: "광동 프릭스 → DN Freecs → DN SOOPers 순으로 리브랜딩(구 약어: DNF/DNS). SOOPers는 스트리밍 플랫폼 SOOP의 스폰서십에서 유래.",
   },
 };
 
