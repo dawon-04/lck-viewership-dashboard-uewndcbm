@@ -1287,6 +1287,7 @@ export default function GenGDashboard() {
             alignItems: "flex-end",
             marginBottom: 18,
             gap: 20,
+            flexWrap: "wrap", // 창이 좁아지면 아래로 떨어지게 처리
           }}
         >
           <div>
@@ -1306,11 +1307,12 @@ export default function GenGDashboard() {
 
             <h1
               style={{
-                fontSize: 30,
+                fontSize: "clamp(22px, 4vw, 30px)", // 화면 크기에 따라 글씨 크기 유연 조절
                 fontWeight: 800,
                 margin: 0,
                 letterSpacing: -0.5,
                 color: "#FAFAFC",
+                lineHeight: 1.3, // 글씨 간격(행간)을 넉넉히 주어 겹침 방지
               }}
             >
               구단별 시청자 데이터 대시보드
@@ -1319,10 +1321,10 @@ export default function GenGDashboard() {
 
           <div
             style={{
-              fontSize: 12,
+              fontSize: 11.5,
               color: TEXT_DIM,
               textAlign: "right",
-              lineHeight: 1.7,
+              lineHeight: 1.6,
             }}
           >
             Interactive Dashboard
