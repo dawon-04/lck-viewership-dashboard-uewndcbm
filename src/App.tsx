@@ -98,7 +98,7 @@ const TEAM_NOTES = {
     note: "구 ROX Tigers. 2018년 한화생명이 로스터와 LCK 자리를 인수해 리브랜딩. 2024 LCK 서머, 2025 LCK Cup·First Stand 우승.",
   },
   "kt Rolster": {
-    nameKo: "KT 롤스터",
+    nameKo: "kt 롤스터",
     note: "1999년 창단, KT가 스폰서인 국내 최장수 e스포츠 구단 중 하나.",
   },
   "Dplus Kia": {
