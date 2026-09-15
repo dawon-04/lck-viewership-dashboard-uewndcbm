@@ -1302,7 +1302,7 @@ export default function GenGDashboard() {
                   "ui-monospace, monospace",
               }}
             >
-              LCK VIEWERSHIP (2025~2026 상반기)
+              LCK VIEWERSHIP (2025 전체 · 2026 상반기)
             </div>
 
             <h1
@@ -1329,7 +1329,7 @@ export default function GenGDashboard() {
           >
             Interactive Dashboard
             <br />
-            2025~2026 상반기 LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
+            2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
           </div>
         </div>
 
@@ -2688,7 +2688,7 @@ export default function GenGDashboard() {
             lineHeight: 1.8,
           }}
         >
-          2025~2026 상반기 LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
+          2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
           <br />
           모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산됩니다.
         </div>
