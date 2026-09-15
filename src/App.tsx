@@ -70,17 +70,62 @@ const isGenG = (team) => team === "Gen.G";
 // ============================================================
 // 공식 Stage 순서
 // ============================================================
-
 const STAGE_ORDER = [
   "LCK Cup",
   "Split 1",
-  "First Stand",
   "Split 2 — Regular Season",
   "Split 2 — Road to MSI",
+  "First Stand",
   "MSI",
   "Split 3",
   "Worlds",
 ];
+
+// ============================================================
+// 구단별 분석 참고사항 및 이력 (Team Insight Notes)
+// ============================================================
+const TEAM_NOTES = {
+  "Gen.G": {
+    nameKo: "젠지",
+    note: "삼성 갤럭시 시절부터 이어지는 전통의 명가. 2024·2025 MSI 연속 우승 및 LCK 상위권을 수성하며 글로벌 강력한 코어 팬덤과 높은 평균 시청 지표를 기록 중입니다.",
+  },
+  "T1": {
+    nameKo: "T1",
+    note: "‘페이커’ 이상혁 선수의 상징성과 롤드컵 최다 우승 커리어를 바탕으로 국내외를 통틀어 압도적인 1위 시청률과 화제성을 견인하는 독보적 체급의 구단입니다.",
+  },
+  "Hanwha Life Esports": {
+    nameKo: "한화생명e스포츠",
+    note: "공격적인 로스터 투자와 대형 스타 선수 영입을 통해 팬덤 규모와 미디어 화제성이 가장 가파르게 상승한 상위권 대형 구단입니다.",
+  },
+  "kt Rolster": {
+    nameKo: "KT 롤스터",
+    note: "통신사 라이벌 구도와 유서 깊은 전통을 지닌 구단. 특정 빅매치 및 통신사 대전에서 순간 최고 동시시청자수(Peak Viewers) 폭발력이 매우 뛰어납니다.",
+  },
+  "Dplus Kia": {
+    nameKo: "디플러스 기아",
+    note: "담원 기아 시절 롤드컵 우승(2020) 커리어를 바탕으로 '쇼메이커' 허수 선수를 중심으로 한 충성도 높은 콘크리트 팬층을 보유하고 있습니다.",
+  },
+  "Nongshim RedForce": {
+    nameKo: "농심 레드포스",
+    note: "모기업 식품 브랜드를 활용한 독창적인 마케팅과 베테랑-유스 조화 기조를 바탕으로 꾸준히 팬 유입을 다지고 있는 중견 구단입니다.",
+  },
+  "BNK FEARX": {
+    nameKo: "BNK 피어엑스",
+    note: "서브컬처 및 트렌디한 브랜딩, 공격적인 인게임 스타일로 젊은 층 및 마니아층 중심의 팬 유입과 가파른 성장세를 보여주는 구단입니다.",
+  },
+  "KIWOOM DRX": {
+    nameKo: "키움 DRX",
+    note: "2022 롤드컵 미라클 런의 감동을 품은 구단. 최근 키움증권(KIWOOM)과의 메인 스폰서십 체결에 따라 기존 'DRX'에서 현 명칭으로 변경되었습니다. (데이터 내 과도기적 명칭 혼재 주의)",
+  },
+  "HANJIN BRION": {
+    nameKo: "HANJIN BRION",
+    note: "네이밍 스폰서십 및 리브랜딩이 적용된 구단 (방송 약어: BRO). 언더독 특유의 낭만과 단단한 코어 팬층을 지니고 있습니다.",
+  },
+  "DN SOOPers": {
+    nameKo: "DN 수퍼스",
+    note: "광동 프릭스에서 리브랜딩 및 네이밍 스폰서십 변경을 거친 구단 (구 약어: DNF/DNS). 플랫폼(SOOP) 연계 유입 및 독자적인 브랜딩을 전개 중입니다.",
+  },
+};
 
 // ============================================================
 // Team Summary
@@ -421,21 +466,10 @@ export default function GenGDashboard() {
             .trim(),
 
         complete: (results) => {
-          console.log(
-            "Google Sheets 데이터:",
-            results.data
-          );
-
-          console.log(
-            "총 데이터 행:",
-            results.data.length
-          );
-
           if (!results.data.length) {
             setError(
               "Google Sheets에 데이터가 없습니다."
             );
-
             setLoading(false);
             return;
           }
@@ -449,11 +483,9 @@ export default function GenGDashboard() {
             "Google Sheets 불러오기 실패:",
             err
           );
-
           setError(
             "Google Sheets 데이터를 불러오지 못했습니다."
           );
-
           setLoading(false);
         },
       }
@@ -630,56 +662,54 @@ export default function GenGDashboard() {
     setSelectedPlatform("All");
   };
 
-// ==========================================================
-// TEAM RANKING DATA
-// Team 필터는 제외하고 Year / Stage / Platform만 적용
-// ==========================================================
-const rankingData =
-  useMemo(() => {
-    return data.filter((r) => {
-      const yearMatch =
-        selectedYear === "All" ||
-        String(
-          r.Year || ""
-        ).trim() ===
-          selectedYear;
+  // ==========================================================
+  // TEAM RANKING DATA
+  // ==========================================================
+  const rankingData =
+    useMemo(() => {
+      return data.filter((r) => {
+        const yearMatch =
+          selectedYear === "All" ||
+          String(
+            r.Year || ""
+          ).trim() ===
+            selectedYear;
 
-      const stageMatch =
-        matchesStage(
-          r,
-          selectedStage
+        const stageMatch =
+          matchesStage(
+            r,
+            selectedStage
+          );
+
+        const platformMatch =
+          selectedPlatform === "All" ||
+          String(
+            r.Platform || ""
+          ).trim() ===
+            selectedPlatform;
+
+        return (
+          yearMatch &&
+          stageMatch &&
+          platformMatch
         );
+      });
+    }, [
+      data,
+      selectedYear,
+      selectedStage,
+      selectedPlatform,
+    ]);
 
-      const platformMatch =
-        selectedPlatform === "All" ||
-        String(
-          r.Platform || ""
-        ).trim() ===
-          selectedPlatform;
-
-      return (
-        yearMatch &&
-        stageMatch &&
-        platformMatch
+  // ==========================================================
+  // TEAM SUMMARY
+  // ==========================================================
+  const TEAM_SUMMARY =
+    useMemo(() => {
+      return getTeamSummary(
+        rankingData
       );
-    });
-  }, [
-    data,
-    selectedYear,
-    selectedStage,
-    selectedPlatform,
-  ]);
-
-// ==========================================================
-// TEAM SUMMARY
-// 선택한 Team과 상관없이 전체 구단의 순위를 계산
-// ==========================================================
-const TEAM_SUMMARY =
-  useMemo(() => {
-    return getTeamSummary(
-      rankingData
-    );
-  }, [rankingData]);
+    }, [rankingData]);
 
   // ==========================================================
   // KPI DATA
@@ -747,117 +777,68 @@ const TEAM_SUMMARY =
     ]);
 
   // ==========================================================
-  // CUP COMPARISON
-  // 2025 LCK Cup vs 2026 Split 1
-  // Team 필터는 제외
-  // Year / Stage 필터도 무시
-  // Platform만 적용
+  // 01 HALF-YEAR (1H) COMPARISON (상반기 전체 누적 비교)
   // ==========================================================
-  const CUP_COMPARE = useMemo(() => {
-    const getCupData = (
-      year: string,
-      stage: string
-    ) => {
+  const HALF_YEAR_COMPARE = useMemo(() => {
+    const getHalfYearData = (year: string) => {
       return data.filter((r) => {
         const platformMatch =
           selectedPlatform === "All" ||
-          String(
-            r.Platform || ""
-          ).trim() ===
-            selectedPlatform;
+          String(r.Platform || "").trim() === selectedPlatform;
+
+        const stage = String(r.Stage || "").trim();
+        const isFirstHalf =
+          stage === "LCK Cup" ||
+          stage === "Split 1" ||
+          stage === "Split 2 — Regular Season" ||
+          stage === "Split 2 — Road to MSI";
 
         return (
-          String(
-            r.Year || ""
-          ).trim() === year &&
-          String(
-            r.Stage || ""
-          ).trim() === stage &&
+          String(r.Year || "").trim() === year &&
+          isFirstHalf &&
           platformMatch
         );
       });
     };
 
-    const cup2025 =
-      getCupData(
-        "2025",
-        "LCK Cup"
-      );
+    const half2025 = getHalfYearData("2025");
+    const half2026 = getHalfYearData("2026");
 
-    const cup2026 =
-      getCupData(
-        "2026",
-        "Split 1"
-      );
-
-    // 두 대회에 등장하는 모든 팀
     const teams = Array.from(
       new Set(
-        [...cup2025, ...cup2026]
-          .map((r) =>
-            String(
-              r.Team_Full || ""
-            ).trim()
-          )
+        [...half2025, ...half2026]
+          .map((r) => String(r.Team_Full || "").trim())
           .filter(Boolean)
       )
     );
 
     return teams
       .map((team) => {
-        const data2025 =
-          cup2025.filter(
-            (r) =>
-              String(
-                r.Team_Full || ""
-              ).trim() === team
-          );
-
-        const data2026 =
-          cup2026.filter(
-            (r) =>
-              String(
-                r.Team_Full || ""
-              ).trim() === team
-          );
+        const data2025 = half2025.filter(
+          (r) => String(r.Team_Full || "").trim() === team
+        );
+        const data2026 = half2026.filter(
+          (r) => String(r.Team_Full || "").trim() === team
+        );
 
         const avg2025 =
           data2025.length > 0
             ? Math.round(
-                avg(
-                  data2025.map(
-                    (r) =>
-                      toNumber(
-                        r.Avg_Viewers
-                      )
-                  )
-                )
+                avg(data2025.map((r) => toNumber(r.Avg_Viewers)))
               )
             : 0;
 
         const avg2026 =
           data2026.length > 0
             ? Math.round(
-                avg(
-                  data2026.map(
-                    (r) =>
-                      toNumber(
-                        r.Avg_Viewers
-                      )
-                  )
-                )
+                avg(data2026.map((r) => toNumber(r.Avg_Viewers)))
               )
             : 0;
 
         const yoy =
           avg2025 > 0
             ? Number(
-                (
-                  ((avg2026 /
-                    avg2025) -
-                    1) *
-                  100
-                ).toFixed(1)
+                (((avg2026 / avg2025) - 1) * 100).toFixed(1)
               )
             : 0;
 
@@ -868,161 +849,64 @@ const TEAM_SUMMARY =
           yoy,
         };
       })
-      .sort(
-        (a, b) =>
-          b.y2026 - a.y2026
-      );
-  }, [
-    data,
-    selectedPlatform,
-  ]);
+      .sort((a, b) => b.y2026 - a.y2026);
+  }, [data, selectedPlatform]);
 
   // ==========================================================
-  // SELECTED TEAM CUP
+  // SELECTED TEAM HALF-YEAR
   // ==========================================================
-  const selectedCup =
-    useMemo(() => {
-      if (
-        selectedTeam === "All"
-      ) {
-        const cupRows2025 =
-          data.filter((r) => {
-            return (
-              Number(r.Year) ===
-                2025 &&
-              String(
-                r.Stage || ""
-              ).trim() ===
-                "LCK Cup" &&
-              (
-                selectedPlatform ===
-                  "All" ||
-                String(
-                  r.Platform || ""
-                ).trim() ===
-                  selectedPlatform
-              )
-            );
-          });
-
-        const cupRows2026 =
-          data.filter((r) => {
-            return (
-              Number(r.Year) ===
-                2026 &&
-              String(
-                r.Stage || ""
-              ).trim() ===
-                "Split 1" &&
-              (
-                selectedPlatform ===
-                  "All" ||
-                String(
-                  r.Platform || ""
-                ).trim() ===
-                  selectedPlatform
-              )
-            );
-          });
-
-        const y2025 =
-          Math.round(
-            avg(
-              cupRows2025.map(
-                (r) =>
-                  toNumber(
-                    r.Avg_Viewers
-                  )
-              )
-            )
+  const selectedHalfYear = useMemo(() => {
+    if (selectedTeam === "All") {
+      const getFirstHalfRows = (yr) =>
+        data.filter((r) => {
+          const stage = String(r.Stage || "").trim();
+          const isFirstHalf =
+            stage === "LCK Cup" ||
+            stage === "Split 1" ||
+            stage === "Split 2 — Regular Season" ||
+            stage === "Split 2 — Road to MSI";
+          return (
+            Number(r.Year) === yr &&
+            isFirstHalf &&
+            (selectedPlatform === "All" ||
+              String(r.Platform || "").trim() === selectedPlatform)
           );
+        });
 
-        const y2026 =
-          Math.round(
-            avg(
-              cupRows2026.map(
-                (r) =>
-                  toNumber(
-                    r.Avg_Viewers
-                  )
-              )
-            )
-          );
-
-        return {
-          y2025,
-          y2026,
-          yoy:
-            y2025 > 0
-              ? Number(
-                  (
-                    ((y2026 /
-                      y2025) -
-                      1) *
-                    100
-                  ).toFixed(1)
-                )
-              : 0,
-        };
-      }
-
-      const row =
-        CUP_COMPARE.find(
-          (r) =>
-            r.team ===
-            selectedTeam
-        );
-
-      if (!row) {
-        return {
-          y2025: 0,
-          y2026: 0,
-          yoy: 0,
-        };
-      }
+      const y2025 = Math.round(avg(getFirstHalfRows(2025).map((r) => toNumber(r.Avg_Viewers))));
+      const y2026 = Math.round(avg(getFirstHalfRows(2026).map((r) => toNumber(r.Avg_Viewers))));
 
       return {
-        y2025: row.y2025,
-        y2026: row.y2026,
-        yoy: row.yoy,
+        y2025,
+        y2026,
+        yoy: y2025 > 0 ? Number((((y2026 / y2025) - 1) * 100).toFixed(1)) : 0,
       };
-    }, [
-      CUP_COMPARE,
-      selectedTeam,
-      data,
-      selectedPlatform,
-    ]);
+    }
+
+    const row = HALF_YEAR_COMPARE.find((r) => r.team === selectedTeam);
+    if (!row) return { y2025: 0, y2026: 0, yoy: 0 };
+    return { y2025: row.y2025, y2026: row.y2026, yoy: row.yoy };
+  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform]);
 
   // ==========================================================
-  // CUP RANK
-  // 선택한 팀이 전체 팀 중 몇 위인지 계산
+  // HALF-YEAR RANK
   // ==========================================================
-  const selectedCupRank =
-    useMemo(() => {
-      if (selectedTeam === "All") {
-        return {
-          y2025: 0,
-          y2026: 0,
-        };
-      }
+  const selectedHalfYearRank = useMemo(() => {
+    if (selectedTeam === "All") return { y2025: 0, y2026: 0 };
 
-      const rankForYear = (key) => {
-        const sorted = [...CUP_COMPARE]
-          .filter((r) => r[key] != null)
-          .sort((a, b) => b[key] - a[key]);
+    const rankForYear = (key) => {
+      const sorted = [...HALF_YEAR_COMPARE]
+        .filter((r) => r[key] != null)
+        .sort((a, b) => b[key] - a[key]);
+      const index = sorted.findIndex((r) => r.team === selectedTeam);
+      return index >= 0 ? index + 1 : 0;
+    };
 
-        const index = sorted.findIndex(
-          (r) => r.team === selectedTeam
-        );
-
-        return index >= 0 ? index + 1 : 0;
-      };
-
-      return {
-        y2025: rankForYear("y2025"),
-        y2026: rankForYear("y2026"),
-      };
-    }, [CUP_COMPARE, selectedTeam]);
+    return {
+      y2025: rankForYear("y2025"),
+      y2026: rankForYear("y2026"),
+    };
+  }, [HALF_YEAR_COMPARE, selectedTeam]);
 
   // ==========================================================
   // STAGE PERFORMANCE
@@ -1089,7 +973,7 @@ const TEAM_SUMMARY =
           );
         };
 
-      const result = {
+      return {
         team:
           selectedTeam ===
           "All"
@@ -1132,8 +1016,6 @@ const TEAM_SUMMARY =
             "Worlds"
           ),
       };
-
-      return result;
     }, [
       data,
       selectedTeam,
@@ -1141,9 +1023,9 @@ const TEAM_SUMMARY =
       selectedPlatform,
     ]);
 
-// ==========================================================
-// STAGE CHART DATA
-// ==========================================================
+  // ==========================================================
+  // STAGE CHART DATA
+  // ==========================================================
   const stageChartData = useMemo(() => {
     return STAGE_ORDER
       .map((stage) => ({
@@ -1153,65 +1035,52 @@ const TEAM_SUMMARY =
       .filter((d) => d.value != null);
   }, [stageRow]);
 
-// ==========================================================
-// YEARLY TREND
-// 2025 LCK Cup vs 2026 Split 1
-// Year / Stage 필터는 무시하고 항상 동일한 시즌 초반 단계 비교
-// Team / Platform 필터만 적용
-// ==========================================================
+  // ==========================================================
+  // YEARLY TREND (04 섹션: 상반기 전체 트렌드 비교)
+  // ==========================================================
   const YEARLY_TREND = useMemo(() => {
+    const getFirstHalfAvg = (yrVal) => {
+      return avg(
+        data
+          .filter((r) => {
+            const teamMatch =
+              selectedTeam === "All" ||
+              String(r.Team_Full || "").trim() === selectedTeam;
+
+            const platformMatch =
+              selectedPlatform === "All" ||
+              String(r.Platform || "").trim() === selectedPlatform;
+
+            const stage = String(r.Stage || "").trim();
+            const isFirstHalf =
+              stage === "LCK Cup" ||
+              stage === "Split 1" ||
+              stage === "Split 2 — Regular Season" ||
+              stage === "Split 2 — Road to MSI";
+
+            return (
+              teamMatch &&
+              platformMatch &&
+              String(r.Year || "").trim() === yrVal &&
+              isFirstHalf
+            );
+          })
+          .map((r) => toNumber(r.Avg_Viewers))
+      );
+    };
+
     const trendData = [
       {
-        year: "2025",
-        stage: "LCK Cup",
-        value: avg(
-          data
-            .filter((r) => {
-              const teamMatch =
-                selectedTeam === "All" ||
-                String(r.Team_Full || "").trim() === selectedTeam;
-
-              const platformMatch =
-                selectedPlatform === "All" ||
-                String(r.Platform || "").trim() === selectedPlatform;
-
-              return (
-                teamMatch &&
-                platformMatch &&
-                String(r.Year || "").trim() === "2025" &&
-                String(r.Stage || "").trim() === "LCK Cup"
-              );
-            })
-            .map((r) => toNumber(r.Avg_Viewers))
-        ),
+        year: "2025 상반기",
+        value: getFirstHalfAvg("2025"),
       },
       {
-        year: "2026",
-        stage: "Split 1",
-        value: avg(
-          data
-            .filter((r) => {
-              const teamMatch =
-                selectedTeam === "All" ||
-                String(r.Team_Full || "").trim() === selectedTeam;
-
-              const platformMatch =
-                selectedPlatform === "All" ||
-                String(r.Platform || "").trim() === selectedPlatform;
-
-              return (
-                teamMatch &&
-                platformMatch &&
-                String(r.Year || "").trim() === "2026" &&
-                String(r.Stage || "").trim() === "Split 1"
-              );
-            })
-            .map((r) => toNumber(r.Avg_Viewers))
-        ),
+        year: "2026 상반기",
+        value: getFirstHalfAvg("2026"),
       },
     ];
 
-    return trendData.filter((d) => d.value != null);
+    return trendData.filter((d) => d.value > 0);
   }, [data, selectedTeam, selectedPlatform]);
 
   // ==========================================================
@@ -1219,66 +1088,39 @@ const TEAM_SUMMARY =
   // ==========================================================
   const TOP5 =
     useMemo(() => {
-      const rows =
-        filteredData;
-
+      const rows = filteredData;
       const grouped = {};
 
       rows.forEach((r) => {
-        const date =
-          r.Date || "Unknown";
-
+        const date = r.Date || "Unknown";
         if (!grouped[date]) {
           grouped[date] = [];
         }
-
         grouped[date].push(r);
       });
 
-      const matches =
-        Object.entries(
-          grouped
-        ).map(
-          ([date, rows]) => {
-            const peak =
-              Math.max(
-                ...rows.map(
-                  (r) =>
-                    toNumber(
-                      r.Peak_Viewers_sub
-                    )
-                )
-              );
-
-            const average =
-              Math.round(
-                avg(
-                  rows.map(
-                    (r) =>
-                      toNumber(
-                        r.Avg_Viewers
-                      )
-                  )
-                )
-              );
-
-            return {
-              date,
-              tag:
-                rows[0]?.Stage ||
-                rows[0]?.Tournament ||
-                "Event",
-              peak,
-              avg: average,
-            };
-          }
+      const matches = Object.entries(grouped).map(([date, rows]) => {
+        const peak = Math.max(
+          ...rows.map((r) => toNumber(r.Peak_Viewers_sub))
         );
 
+        const average = Math.round(
+          avg(rows.map((r) => toNumber(r.Avg_Viewers)))
+        );
+
+        return {
+          date,
+          tag:
+            rows[0]?.Stage ||
+            rows[0]?.Tournament ||
+            "Event",
+          peak,
+          avg: average,
+        };
+      });
+
       return matches
-        .sort(
-          (a, b) =>
-            b.peak - a.peak
-        )
+        .sort((a, b) => b.peak - a.peak)
         .slice(0, 5);
     }, [filteredData]);
 
@@ -1414,7 +1256,7 @@ const TEAM_SUMMARY =
   }
 
   // ==========================================================
-  // Dashboard
+  // Dashboard Render
   // ==========================================================
   return (
     <div
@@ -1459,7 +1301,7 @@ const TEAM_SUMMARY =
                   "ui-monospace, monospace",
               }}
             >
-              LCK VIEWERSHIP
+              LCK VIEWERSHIP (2025~2026 상반기)
             </div>
 
             <h1
@@ -1471,8 +1313,7 @@ const TEAM_SUMMARY =
                 color: "#FAFAFC",
               }}
             >
-              구단별 시청자 데이터
-              대시보드
+              구단별 시청자 데이터 대시보드
             </h1>
           </div>
 
@@ -1486,7 +1327,7 @@ const TEAM_SUMMARY =
           >
             Interactive Dashboard
             <br />
-            Google Sheets Live Data
+            2025~2026 상반기 LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
           </div>
         </div>
 
@@ -1660,6 +1501,70 @@ const TEAM_SUMMARY =
         </div>
 
         {/* ==================================================
+            TEAM INSIGHT NOTE CARD (팀 선택 시 데이터 참고사항 출력)
+        ================================================== */}
+        {selectedTeam !== "All" && TEAM_NOTES[selectedTeam] && (
+          <div
+            style={{
+              background: PANEL,
+              border: `1px solid ${GOLD}`,
+              borderRadius: 8,
+              padding: "16px 20px",
+              marginBottom: 28,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 14,
+              boxShadow: "0 4px 20px rgba(212, 175, 55, 0.08)",
+            }}
+          >
+            <div
+              style={{
+                background: "rgba(212, 175, 55, 0.15)",
+                color: GOLD,
+                fontSize: 11,
+                fontWeight: 800,
+                padding: "4px 8px",
+                borderRadius: 4,
+                fontFamily: "ui-monospace, monospace",
+                whiteSpace: "nowrap",
+                letterSpacing: 1,
+              }}
+            >
+              TEAM INSIGHT
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#FAFAFC",
+                  marginBottom: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                {selectedTeam}
+                <span style={{ fontSize: 12, color: TEXT_DIM, fontWeight: 400 }}>
+                  ({TEAM_NOTES[selectedTeam].nameKo}) 데이터 분석 노트
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 12.5,
+                  color: "#D0D5E2",
+                  lineHeight: 1.6,
+                }}
+              >
+                {TEAM_NOTES[selectedTeam].note}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================================================
             TEAM SCOREBOARD
         ================================================== */}
         <div
@@ -1715,7 +1620,7 @@ const TEAM_SUMMARY =
                     borderRadius: 6,
                     padding:
                       "8px 12px",
-                    minWidth: 108,
+                    minWidth: 120,
                   }}
                 >
                   <div
@@ -1733,7 +1638,7 @@ const TEAM_SUMMARY =
 
                   <div
                     style={{
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: 700,
                       color: gold
                         ? GOLD
@@ -1879,11 +1784,11 @@ const TEAM_SUMMARY =
         </div>
 
         {/* ==================================================
-            01 CUP
+            01 HALF-YEAR (1H) COMPARISON
         ================================================== */}
         <SectionLabel
           index="01"
-          title="CUP 동일기간 비교"
+          title="상반기 동일기간 비교 (2025 상반기 vs 2026 상반기)"
         />
 
         <p
@@ -1895,7 +1800,7 @@ const TEAM_SUMMARY =
             marginBottom: 18,
           }}
         >
-          2025년 LCK Cup과 2026년 Split 1의{" "}
+          2025년 상반기와 2026년 상반기의{" "}
           <strong
             style={{
               color: "#E5E7F0",
@@ -1907,55 +1812,54 @@ const TEAM_SUMMARY =
           {" "}
           {selectedTeam === "All" ? (
             <>
-              전체 구단 기준 2025년 평균은{" "}
+              전체 구단 기준 2025년 상반기 평균은{" "}
               <strong
                 style={{
                   color: GOLD,
                 }}
               >
-                {selectedCup.y2025
-                  ? fmt(selectedCup.y2025)
+                {selectedHalfYear.y2025
+                  ? fmt(selectedHalfYear.y2025)
                   : "-"}
               </strong>
-              , 2026년 평균은{" "}
+              , 2026년 상반기 평균은{" "}
               <strong
                 style={{
                   color: GOLD,
                 }}
               >
-                {selectedCup.y2026
-                  ? fmt(selectedCup.y2026)
+                {selectedHalfYear.y2026
+                  ? fmt(selectedHalfYear.y2026)
                   : "-"}
               </strong>
               입니다.
             </>
           ) : (
             <>
-              {selectedTeam}의 경우 2025년{" "}
+              {selectedTeam}의 경우 2025년 상반기{" "}
               <strong
                 style={{
                   color: GOLD,
                 }}
               >
-                {selectedCupRank.y2025
-                  ? `${selectedCupRank.y2025}위`
+                {selectedHalfYearRank.y2025
+                  ? `${selectedHalfYearRank.y2025}위`
                   : "-"}
               </strong>
-              , 2026년{" "}
+              , 2026년 상반기{" "}
               <strong
                 style={{
                   color: GOLD,
                 }}
               >
-                {selectedCupRank.y2026
-                  ? `${selectedCupRank.y2026}위`
+                {selectedHalfYearRank.y2026
+                  ? `${selectedHalfYearRank.y2026}위`
                   : "-"}
               </strong>
               입니다.
             </>
           )}
         </p>
-           
 
         <div
           style={{
@@ -1974,7 +1878,7 @@ const TEAM_SUMMARY =
           >
             <BarChart
               data={
-                CUP_COMPARE
+                HALF_YEAR_COMPARE
               }
               margin={{
                 top: 4,
@@ -1998,7 +1902,7 @@ const TEAM_SUMMARY =
                 interval={0}
                 angle={-20}
                 textAnchor="end"
-                height={70}
+                height={75}
               />
 
               <YAxis
@@ -2030,7 +1934,7 @@ const TEAM_SUMMARY =
 
               <Bar
                 dataKey="y2025"
-                name="2025 LCK Cup"
+                name="2025 상반기"
                 radius={[
                   3,
                   3,
@@ -2038,7 +1942,7 @@ const TEAM_SUMMARY =
                   0,
                 ]}
               >
-                {CUP_COMPARE.map(
+                {HALF_YEAR_COMPARE.map(
                   (d, i) => (
                     <Cell
                       key={i}
@@ -2056,7 +1960,7 @@ const TEAM_SUMMARY =
 
               <Bar
                 dataKey="y2026"
-                name="2026 Split 1"
+                name="2026 상반기"
                 radius={[
                   3,
                   3,
@@ -2064,7 +1968,7 @@ const TEAM_SUMMARY =
                   0,
                 ]}
               >
-                {CUP_COMPARE.map(
+                {HALF_YEAR_COMPARE.map(
                   (d, i) => (
                     <Cell
                       key={i}
@@ -2088,7 +1992,7 @@ const TEAM_SUMMARY =
         ================================================== */}
         <SectionLabel
           index="02"
-          title="구단별 시청자 순위"
+          title="구단별 시청자 순위 (공식 풀네임)"
         />
 
         <p
@@ -2099,8 +2003,7 @@ const TEAM_SUMMARY =
             marginBottom: 14,
           }}
         >
-          현재 선택한 필터 조건을 기준으로
-          구단별 평균 동시시청자를 비교합니다.
+          현재 선택한 필터 조건을 기준으로 구단별 평균 동시시청자를 비교합니다. (KIWOOM DRX 등 최신 공식 구단명 일괄 적용)
         </p>
 
         <div
@@ -2118,7 +2021,7 @@ const TEAM_SUMMARY =
           0 ? (
             <ResponsiveContainer
               width="100%"
-              height={380}
+              height={390}
             >
               <BarChart
                 data={
@@ -2127,7 +2030,7 @@ const TEAM_SUMMARY =
                 layout="vertical"
                 margin={{
                   top: 4,
-                  right: 40,
+                  right: 45,
                   left: 10,
                   bottom: 4,
                 }}
@@ -2154,9 +2057,9 @@ const TEAM_SUMMARY =
                   dataKey="team"
                   tick={{
                     fill: "#E5E7F0",
-                    fontSize: 12,
+                    fontSize: 11.5,
                   }}
-                  width={140}
+                  width={155}
                 />
 
                 <Tooltip
@@ -2242,14 +2145,9 @@ const TEAM_SUMMARY =
             marginBottom: 14,
           }}
         >
-          Year와 Platform 필터를
-          적용한{" "}
-          {selectedTeam ===
-          "All"
-            ? "전체 구단의"
-            : "선택 구단의"}{" "}
-          단계별 평균
-          동시시청자입니다.
+          Year와 Platform 필터를 적용한{" "}
+          {selectedTeam === "All" ? "전체 구단의" : "선택 구단의"}{" "}
+          대회 단계별 평균 동시시청자입니다. (2026 Split 2 정규시즌 및 Road to MSI 포함)
         </p>
 
         <div
@@ -2295,7 +2193,7 @@ const TEAM_SUMMARY =
                   interval={0}
                   angle={-15}
                   textAnchor="end"
-                  height={55}
+                  height={65}
                 />
 
                 <YAxis
@@ -2365,7 +2263,7 @@ const TEAM_SUMMARY =
         ================================================== */}
         <SectionLabel
           index="04"
-          title="연도별 시즌 초반 시청자 트렌드"
+          title="연도별 상반기 전체 시청자 트렌드"
         />
 
         <p
@@ -2376,12 +2274,7 @@ const TEAM_SUMMARY =
             marginBottom: 14,
           }}
         >
-          2025년 <strong style={{ color: "#E5E7F0" }}>LCK Cup</strong>과
-          2026년 <strong style={{ color: "#E5E7F0" }}>Split 1</strong>의
-          <strong style={{ color: "#E5E7F0" }}> 동일 시즌 초반 구간</strong>을 비교합니다.
-          <br />
-          데이터 범위: <strong style={{ color: "#E5E7F0" }}>2025-01-15 ~ 2025-03-02</strong> /
-          <strong style={{ color: "#E5E7F0" }}> 2026-01-17 ~ 2026-03-08</strong>
+          2025년 상반기와 2026년 상반기의 <strong style={{ color: "#E5E7F0" }}>전체 경기 평균 시청자</strong> 추이를 비교합니다.
         </p>
 
         <div
@@ -2441,7 +2334,7 @@ const TEAM_SUMMARY =
                 <Line
                   type="monotone"
                   dataKey="value"
-                  name="평균 동시시청자"
+                  name="상반기 평균 동시시청자"
                   stroke={RED}
                   strokeWidth={2.5}
                   dot={{
@@ -2793,14 +2686,9 @@ const TEAM_SUMMARY =
             lineHeight: 1.8,
           }}
         >
-          모든 수치는 연결된
-          Google Sheets
-          Dashboard_Data를 기준으로
-          자동 계산됩니다.
+          2025~2026 상반기 LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
           <br />
-          필터 변경 시 해당 조건에
-          맞는 데이터로 KPI 및 차트가
-          다시 계산됩니다.
+          모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산됩니다.
         </div>
       </div>
     </div>
