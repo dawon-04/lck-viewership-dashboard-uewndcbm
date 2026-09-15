@@ -1786,10 +1786,152 @@ export default function GenGDashboard() {
         </div>
 
         {/* ==================================================
-            01 HALF-YEAR (1H) COMPARISON
+            01 TEAM RANKING
         ================================================== */}
         <SectionLabel
           index="01"
+          title="구단별 시청자 순위 (공식 풀네임)"
+        />
+
+        <p
+          style={{
+            color: TEXT_DIM,
+            fontSize: 12.5,
+            marginTop: -8,
+            marginBottom: 14,
+          }}
+        >
+          현재 선택한 필터 조건을 기준으로 구단별 평균 동시시청자를 비교합니다. (KIWOOM DRX 등 최신 공식 구단명 일괄 적용)
+        </p>
+
+        <div
+          style={{
+            background: PANEL,
+            border:
+              `1px solid ${BORDER}`,
+            borderRadius: 8,
+            padding:
+              "20px 20px 8px",
+            marginBottom: 40,
+          }}
+        >
+          {TEAM_SUMMARY.length >
+          0 ? (
+            <ResponsiveContainer
+              width="100%"
+              height={390}
+            >
+              <BarChart
+                data={
+                  TEAM_SUMMARY
+                }
+                layout="vertical"
+                margin={{
+                  top: 4,
+                  right: 45,
+                  left: 10,
+                  bottom: 4,
+                }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={BORDER}
+                  horizontal={false}
+                />
+
+                <XAxis
+                  type="number"
+                  tick={{
+                    fill: TEXT_DIM,
+                    fontSize: 11,
+                  }}
+                  tickFormatter={(v) =>
+                    `${v / 1000}k`
+                  }
+                />
+
+                <YAxis
+                  type="category"
+                  dataKey="team"
+                  tick={{
+                    fill: "#E5E7F0",
+                    fontSize: 11.5,
+                  }}
+                  width={155}
+                />
+
+                <Tooltip
+                  content={
+                    <CustomTooltip />
+                  }
+                  cursor={{
+                    fill:
+                      "rgba(255,255,255,0.03)",
+                  }}
+                />
+
+                <Bar
+                  dataKey="avg"
+                  name="평균 동시시청자"
+                  radius={[
+                    0,
+                    4,
+                    4,
+                    0,
+                  ]}
+                >
+                  {TEAM_SUMMARY.map(
+                    (d, i) => (
+                      <Cell
+                        key={i}
+                        fill={
+                          isGenG(
+                            d.team
+                          )
+                            ? GOLD
+                            : SLATE
+                        }
+                      />
+                    )
+                  )}
+
+                  <LabelList
+                    dataKey="avg"
+                    position="right"
+                    formatter={fmt}
+                    style={{
+                      fill: TEXT_DIM,
+                      fontSize: 11,
+                    }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div
+              style={{
+                height: 300,
+                display: "flex",
+                alignItems:
+                  "center",
+                justifyContent:
+                  "center",
+                color: TEXT_DIM,
+                fontSize: 13,
+              }}
+            >
+              선택한 조건에
+              해당하는 데이터가
+              없습니다.
+            </div>
+          )}
+        </div>
+
+        {/* ==================================================
+            02 HALF-YEAR (1H) COMPARISON
+        ================================================== */}
+        <SectionLabel
+          index="02"
           title="상반기 동일기간 비교 (2025 상반기 vs 2026 상반기)"
         />
 
@@ -1990,11 +2132,11 @@ export default function GenGDashboard() {
         </div>
 
         {/* ==================================================
-            02 TEAM RANKING
+            03 TREND
         ================================================== */}
         <SectionLabel
-          index="02"
-          title="구단별 시청자 순위 (공식 풀네임)"
+          index="03"
+          title="연도별 상반기 전체 시청자 트렌드"
         />
 
         <p
@@ -2005,7 +2147,7 @@ export default function GenGDashboard() {
             marginBottom: 14,
           }}
         >
-          현재 선택한 필터 조건을 기준으로 구단별 평균 동시시청자를 비교합니다. (KIWOOM DRX 등 최신 공식 구단명 일괄 적용)
+          2025년 상반기와 2026년 상반기의 <strong style={{ color: "#E5E7F0" }}>전체 경기 평균 시청자</strong> 추이를 비교합니다.
         </p>
 
         <div
@@ -2019,102 +2161,66 @@ export default function GenGDashboard() {
             marginBottom: 40,
           }}
         >
-          {TEAM_SUMMARY.length >
+          {YEARLY_TREND.length >
           0 ? (
             <ResponsiveContainer
               width="100%"
-              height={390}
+              height={240}
             >
-              <BarChart
+              <LineChart
                 data={
-                  TEAM_SUMMARY
+                  YEARLY_TREND
                 }
-                layout="vertical"
                 margin={{
-                  top: 4,
-                  right: 45,
-                  left: 10,
+                  top: 10,
+                  right: 20,
+                  left: 0,
                   bottom: 4,
                 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke={BORDER}
-                  horizontal={false}
+                  vertical={false}
                 />
 
                 <XAxis
-                  type="number"
+                  dataKey="year"
                   tick={{
                     fill: TEXT_DIM,
-                    fontSize: 11,
+                    fontSize: 12,
                   }}
-                  tickFormatter={(v) =>
-                    `${v / 1000}k`
-                  }
                 />
 
                 <YAxis
-                  type="category"
-                  dataKey="team"
-                  tick={{
-                    fill: "#E5E7F0",
-                    fontSize: 11.5,
-                  }}
-                  width={155}
+                  tick={{ fill: TEXT_DIM, fontSize: 11 }}
+                  tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`}
+                  width={50}
                 />
 
                 <Tooltip
                   content={
                     <CustomTooltip />
                   }
-                  cursor={{
-                    fill:
-                      "rgba(255,255,255,0.03)",
-                  }}
                 />
 
-                <Bar
-                  dataKey="avg"
-                  name="평균 동시시청자"
-                  radius={[
-                    0,
-                    4,
-                    4,
-                    0,
-                  ]}
-                >
-                  {TEAM_SUMMARY.map(
-                    (d, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          isGenG(
-                            d.team
-                          )
-                            ? GOLD
-                            : SLATE
-                        }
-                      />
-                    )
-                  )}
-
-                  <LabelList
-                    dataKey="avg"
-                    position="right"
-                    formatter={fmt}
-                    style={{
-                      fill: TEXT_DIM,
-                      fontSize: 11,
-                    }}
-                  />
-                </Bar>
-              </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name="상반기 평균 동시시청자"
+                  stroke={RED}
+                  strokeWidth={2.5}
+                  dot={{
+                    r: 4,
+                    fill: RED,
+                  }}
+                />
+              </LineChart>
             </ResponsiveContainer>
           ) : (
             <div
               style={{
-                height: 300,
+                height: 200,
                 display: "flex",
                 alignItems:
                   "center",
@@ -2132,10 +2238,10 @@ export default function GenGDashboard() {
         </div>
 
         {/* ==================================================
-            03 STAGE
+            04 STAGE
         ================================================== */}
         <SectionLabel
-          index="03"
+          index="04"
           title={`대회 유형별 시청자 — ${stageRow.team}`}
         />
 
@@ -2244,112 +2350,6 @@ export default function GenGDashboard() {
             <div
               style={{
                 height: 240,
-                display: "flex",
-                alignItems:
-                  "center",
-                justifyContent:
-                  "center",
-                color: TEXT_DIM,
-                fontSize: 13,
-              }}
-            >
-              선택한 조건에
-              해당하는 데이터가
-              없습니다.
-            </div>
-          )}
-        </div>
-
-        {/* ==================================================
-            04 TREND
-        ================================================== */}
-        <SectionLabel
-          index="04"
-          title="연도별 상반기 전체 시청자 트렌드"
-        />
-
-        <p
-          style={{
-            color: TEXT_DIM,
-            fontSize: 12.5,
-            marginTop: -8,
-            marginBottom: 14,
-          }}
-        >
-          2025년 상반기와 2026년 상반기의 <strong style={{ color: "#E5E7F0" }}>전체 경기 평균 시청자</strong> 추이를 비교합니다.
-        </p>
-
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "20px 20px 8px",
-            marginBottom: 40,
-          }}
-        >
-          {YEARLY_TREND.length >
-          0 ? (
-            <ResponsiveContainer
-              width="100%"
-              height={240}
-            >
-              <LineChart
-                data={
-                  YEARLY_TREND
-                }
-                margin={{
-                  top: 10,
-                  right: 20,
-                  left: 0,
-                  bottom: 4,
-                }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={BORDER}
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="year"
-                  tick={{
-                    fill: TEXT_DIM,
-                    fontSize: 12,
-                  }}
-                />
-
-                <YAxis
-                  tick={{ fill: TEXT_DIM, fontSize: 11 }}
-                  tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`}
-                  width={50}
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                />
-
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="상반기 평균 동시시청자"
-                  stroke={RED}
-                  strokeWidth={2.5}
-                  dot={{
-                    r: 4,
-                    fill: RED,
-                  }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div
-              style={{
-                height: 200,
                 display: "flex",
                 alignItems:
                   "center",
