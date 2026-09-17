@@ -38,6 +38,7 @@ type DashboardRow = {
   Year: string;
   Stage: string;
   Split: string;
+  Channel_Type_Final?: string;
   [key: string]: string;
 };
 
@@ -449,15 +450,13 @@ export default function GenGDashboard() {
   const [selectedPlatform, setSelectedPlatform] =
     useState("All");
 
-  // [추가된 필터 state: Official / Costream]
-  const [selectedOfficialCostream, setSelectedOfficialCostream] =
+  // [Channel_Type_Final 필터 상태]
+  const [selectedChannelTypeFinal, setSelectedChannelTypeFinal] =
     useState("All");
 
-  // Helper to read official/costream field safely (handles newline or missing)
-  const getOfficialCostreamVal = (r: DashboardRow) => {
-    const raw = r["Official\n/ Costream"] || r["Official / Costream"] || "";
-    const trimmed = String(raw).trim();
-    return trimmed ? trimmed : "Costream"; // 비어있는(NaN) 행은 Costream 처리
+  const getChannelTypeFinalVal = (r: DashboardRow) => {
+    const raw = r.Channel_Type_Final || "";
+    return String(raw).trim() ? String(raw).trim() : "Unclassified";
   };
 
   // ==========================================================
@@ -544,9 +543,10 @@ export default function GenGDashboard() {
         ),
       ].sort();
 
-      // [추가된 Official/Costream 옵션 추출]
-      const officialCostreams = [
-        ...new Set(data.map((r) => getOfficialCostreamVal(r)).filter(Boolean)),
+      const channelTypeFinals = [
+        ...new Set(
+          data.map((r) => getChannelTypeFinalVal(r)).filter(Boolean)
+        ),
       ].sort();
 
       return {
@@ -565,9 +565,9 @@ export default function GenGDashboard() {
           ...platforms,
         ],
 
-        officialCostreams: [
+        channelTypeFinals: [
           "All",
-          ...officialCostreams,
+          ...channelTypeFinals,
         ],
       };
     }, [data]);
@@ -608,7 +608,7 @@ export default function GenGDashboard() {
     }, [data]);
 
   // ==========================================================
-  // Stage Matching
+  // Stage & ChannelType Matching
   // ==========================================================
   const matchesStage = (
     row,
@@ -625,10 +625,9 @@ export default function GenGDashboard() {
     );
   };
 
-  // Helper for official/costream matching
-  const matchesOfficialCostream = (row) => {
-    if (selectedOfficialCostream === "All") return true;
-    return getOfficialCostreamVal(row) === selectedOfficialCostream;
+  const matchesChannelTypeFinal = (row) => {
+    if (selectedChannelTypeFinal === "All") return true;
+    return getChannelTypeFinalVal(row) === selectedChannelTypeFinal;
   };
 
   // ==========================================================
@@ -664,14 +663,14 @@ export default function GenGDashboard() {
           ).trim() ===
             selectedPlatform;
 
-        const officialCostreamMatch = matchesOfficialCostream(r);
+        const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
         return (
           yearMatch &&
           stageMatch &&
           teamMatch &&
           platformMatch &&
-          officialCostreamMatch
+          channelTypeFinalMatch
         );
       });
     }, [
@@ -680,7 +679,7 @@ export default function GenGDashboard() {
       selectedStage,
       selectedTeam,
       selectedPlatform,
-      selectedOfficialCostream,
+      selectedChannelTypeFinal,
     ]);
 
   // ==========================================================
@@ -691,7 +690,7 @@ export default function GenGDashboard() {
     setSelectedStage("All");
     setSelectedTeam("All");
     setSelectedPlatform("All");
-    setSelectedOfficialCostream("All");
+    setSelectedChannelTypeFinal("All");
   };
 
   // ==========================================================
@@ -720,13 +719,13 @@ export default function GenGDashboard() {
           ).trim() ===
             selectedPlatform;
 
-        const officialCostreamMatch = matchesOfficialCostream(r);
+        const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
         return (
           yearMatch &&
           stageMatch &&
           platformMatch &&
-          officialCostreamMatch
+          channelTypeFinalMatch
         );
       });
     }, [
@@ -734,7 +733,7 @@ export default function GenGDashboard() {
       selectedYear,
       selectedStage,
       selectedPlatform,
-      selectedOfficialCostream,
+      selectedChannelTypeFinal,
     ]);
 
   // ==========================================================
@@ -822,7 +821,7 @@ export default function GenGDashboard() {
           selectedPlatform === "All" ||
           String(r.Platform || "").trim() === selectedPlatform;
 
-        const officialCostreamMatch = matchesOfficialCostream(r);
+        const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
         const stage = String(r.Stage || "").trim();
         const isFirstHalf =
@@ -835,7 +834,7 @@ export default function GenGDashboard() {
           String(r.Year || "").trim() === year &&
           isFirstHalf &&
           platformMatch &&
-          officialCostreamMatch
+          channelTypeFinalMatch
         );
       });
     };
@@ -889,7 +888,7 @@ export default function GenGDashboard() {
         };
       })
       .sort((a, b) => b.y2026 - a.y2026);
-  }, [data, selectedPlatform, selectedOfficialCostream]);
+  }, [data, selectedPlatform, selectedChannelTypeFinal]);
 
   // ==========================================================
   // SELECTED TEAM HALF-YEAR
@@ -909,7 +908,7 @@ export default function GenGDashboard() {
             isFirstHalf &&
             (selectedPlatform === "All" ||
               String(r.Platform || "").trim() === selectedPlatform) &&
-            matchesOfficialCostream(r)
+            matchesChannelTypeFinal(r)
           );
         });
 
@@ -926,7 +925,7 @@ export default function GenGDashboard() {
     const row = HALF_YEAR_COMPARE.find((r) => r.team === selectedTeam);
     if (!row) return { y2025: 0, y2026: 0, yoy: 0 };
     return { y2025: row.y2025, y2026: row.y2026, yoy: row.yoy };
-  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform, selectedOfficialCostream]);
+  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform, selectedChannelTypeFinal]);
 
   // ==========================================================
   // HALF-YEAR RANK
@@ -971,7 +970,7 @@ export default function GenGDashboard() {
             ).trim() ===
               selectedPlatform;
 
-          const officialCostreamMatch = matchesOfficialCostream(r);
+          const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
           const teamMatch =
             selectedTeam ===
@@ -984,7 +983,7 @@ export default function GenGDashboard() {
           return (
             yearMatch &&
             platformMatch &&
-            officialCostreamMatch &&
+            channelTypeFinalMatch &&
             teamMatch
           );
         });
@@ -1064,7 +1063,7 @@ export default function GenGDashboard() {
       selectedTeam,
       selectedYear,
       selectedPlatform,
-      selectedOfficialCostream,
+      selectedChannelTypeFinal,
     ]);
 
   // ==========================================================
@@ -1095,7 +1094,7 @@ export default function GenGDashboard() {
               selectedPlatform === "All" ||
               String(r.Platform || "").trim() === selectedPlatform;
 
-            const officialCostreamMatch = matchesOfficialCostream(r);
+            const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
             const stage = String(r.Stage || "").trim();
             const isFirstHalf =
@@ -1107,7 +1106,7 @@ export default function GenGDashboard() {
             return (
               teamMatch &&
               platformMatch &&
-              officialCostreamMatch &&
+              channelTypeFinalMatch &&
               String(r.Year || "").trim() === yrVal &&
               isFirstHalf
             );
@@ -1128,7 +1127,7 @@ export default function GenGDashboard() {
     ];
 
     return trendData.filter((d) => d.value > 0);
-  }, [data, selectedTeam, selectedPlatform, selectedOfficialCostream]);
+  }, [data, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
 
   // ==========================================================
   // TOP 5
@@ -1202,13 +1201,13 @@ export default function GenGDashboard() {
             ).trim() ===
               selectedStage;
 
-          const officialCostreamMatch = matchesOfficialCostream(r);
+          const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
           return (
             teamMatch &&
             yearMatch &&
             stageMatch &&
-            officialCostreamMatch
+            channelTypeFinalMatch
           );
         });
 
@@ -1259,7 +1258,7 @@ export default function GenGDashboard() {
       selectedTeam,
       selectedYear,
       selectedStage,
-      selectedOfficialCostream,
+      selectedChannelTypeFinal,
     ]);
 
   // ==========================================================
@@ -1500,10 +1499,10 @@ export default function GenGDashboard() {
             />
 
             <FilterSelect
-              label="Stream Type"
-              value={selectedOfficialCostream}
-              options={filterOptions.officialCostreams}
-              onChange={setSelectedOfficialCostream}
+              label="Channel Type"
+              value={selectedChannelTypeFinal}
+              options={filterOptions.channelTypeFinals}
+              onChange={setSelectedChannelTypeFinal}
             />
           </div>
 
@@ -1564,7 +1563,7 @@ export default function GenGDashboard() {
                   "#E5E7F0",
               }}
             >
-              Stream: {selectedOfficialCostream}
+              Channel: {selectedChannelTypeFinal}
             </span>
           </div>
         </div>
