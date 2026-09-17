@@ -373,8 +373,8 @@ function FilterSelect({
   return (
     <div
       style={{
-        minWidth: 150,
-        flex: "1 1 150px",
+        minWidth: 140,
+        flex: "1 1 140px",
       }}
     >
       <div
@@ -448,6 +448,17 @@ export default function GenGDashboard() {
 
   const [selectedPlatform, setSelectedPlatform] =
     useState("All");
+
+  // [추가된 필터 state: Official / Costream]
+  const [selectedOfficialCostream, setSelectedOfficialCostream] =
+    useState("All");
+
+  // Helper to read official/costream field safely (handles newline or missing)
+  const getOfficialCostreamVal = (r: DashboardRow) => {
+    const raw = r["Official\n/ Costream"] || r["Official / Costream"] || "";
+    const trimmed = String(raw).trim();
+    return trimmed ? trimmed : "Costream"; // 비어있는(NaN) 행은 Costream 처리
+  };
 
   // ==========================================================
   // Load Google Sheets
@@ -533,6 +544,11 @@ export default function GenGDashboard() {
         ),
       ].sort();
 
+      // [추가된 Official/Costream 옵션 추출]
+      const officialCostreams = [
+        ...new Set(data.map((r) => getOfficialCostreamVal(r)).filter(Boolean)),
+      ].sort();
+
       return {
         years: [
           "All",
@@ -547,6 +563,11 @@ export default function GenGDashboard() {
         platforms: [
           "All",
           ...platforms,
+        ],
+
+        officialCostreams: [
+          "All",
+          ...officialCostreams,
         ],
       };
     }, [data]);
@@ -604,6 +625,12 @@ export default function GenGDashboard() {
     );
   };
 
+  // Helper for official/costream matching
+  const matchesOfficialCostream = (row) => {
+    if (selectedOfficialCostream === "All") return true;
+    return getOfficialCostreamVal(row) === selectedOfficialCostream;
+  };
+
   // ==========================================================
   // FILTERED DATA
   // ==========================================================
@@ -637,11 +664,14 @@ export default function GenGDashboard() {
           ).trim() ===
             selectedPlatform;
 
+        const officialCostreamMatch = matchesOfficialCostream(r);
+
         return (
           yearMatch &&
           stageMatch &&
           teamMatch &&
-          platformMatch
+          platformMatch &&
+          officialCostreamMatch
         );
       });
     }, [
@@ -650,6 +680,7 @@ export default function GenGDashboard() {
       selectedStage,
       selectedTeam,
       selectedPlatform,
+      selectedOfficialCostream,
     ]);
 
   // ==========================================================
@@ -660,6 +691,7 @@ export default function GenGDashboard() {
     setSelectedStage("All");
     setSelectedTeam("All");
     setSelectedPlatform("All");
+    setSelectedOfficialCostream("All");
   };
 
   // ==========================================================
@@ -688,10 +720,13 @@ export default function GenGDashboard() {
           ).trim() ===
             selectedPlatform;
 
+        const officialCostreamMatch = matchesOfficialCostream(r);
+
         return (
           yearMatch &&
           stageMatch &&
-          platformMatch
+          platformMatch &&
+          officialCostreamMatch
         );
       });
     }, [
@@ -699,6 +734,7 @@ export default function GenGDashboard() {
       selectedYear,
       selectedStage,
       selectedPlatform,
+      selectedOfficialCostream,
     ]);
 
   // ==========================================================
@@ -786,6 +822,8 @@ export default function GenGDashboard() {
           selectedPlatform === "All" ||
           String(r.Platform || "").trim() === selectedPlatform;
 
+        const officialCostreamMatch = matchesOfficialCostream(r);
+
         const stage = String(r.Stage || "").trim();
         const isFirstHalf =
           stage === "LCK Cup" ||
@@ -796,7 +834,8 @@ export default function GenGDashboard() {
         return (
           String(r.Year || "").trim() === year &&
           isFirstHalf &&
-          platformMatch
+          platformMatch &&
+          officialCostreamMatch
         );
       });
     };
@@ -850,7 +889,7 @@ export default function GenGDashboard() {
         };
       })
       .sort((a, b) => b.y2026 - a.y2026);
-  }, [data, selectedPlatform]);
+  }, [data, selectedPlatform, selectedOfficialCostream]);
 
   // ==========================================================
   // SELECTED TEAM HALF-YEAR
@@ -869,7 +908,8 @@ export default function GenGDashboard() {
             Number(r.Year) === yr &&
             isFirstHalf &&
             (selectedPlatform === "All" ||
-              String(r.Platform || "").trim() === selectedPlatform)
+              String(r.Platform || "").trim() === selectedPlatform) &&
+            matchesOfficialCostream(r)
           );
         });
 
@@ -886,7 +926,7 @@ export default function GenGDashboard() {
     const row = HALF_YEAR_COMPARE.find((r) => r.team === selectedTeam);
     if (!row) return { y2025: 0, y2026: 0, yoy: 0 };
     return { y2025: row.y2025, y2026: row.y2026, yoy: row.yoy };
-  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform]);
+  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform, selectedOfficialCostream]);
 
   // ==========================================================
   // HALF-YEAR RANK
@@ -931,6 +971,8 @@ export default function GenGDashboard() {
             ).trim() ===
               selectedPlatform;
 
+          const officialCostreamMatch = matchesOfficialCostream(r);
+
           const teamMatch =
             selectedTeam ===
               "All" ||
@@ -942,6 +984,7 @@ export default function GenGDashboard() {
           return (
             yearMatch &&
             platformMatch &&
+            officialCostreamMatch &&
             teamMatch
           );
         });
@@ -1021,6 +1064,7 @@ export default function GenGDashboard() {
       selectedTeam,
       selectedYear,
       selectedPlatform,
+      selectedOfficialCostream,
     ]);
 
   // ==========================================================
@@ -1051,6 +1095,8 @@ export default function GenGDashboard() {
               selectedPlatform === "All" ||
               String(r.Platform || "").trim() === selectedPlatform;
 
+            const officialCostreamMatch = matchesOfficialCostream(r);
+
             const stage = String(r.Stage || "").trim();
             const isFirstHalf =
               stage === "LCK Cup" ||
@@ -1061,6 +1107,7 @@ export default function GenGDashboard() {
             return (
               teamMatch &&
               platformMatch &&
+              officialCostreamMatch &&
               String(r.Year || "").trim() === yrVal &&
               isFirstHalf
             );
@@ -1081,7 +1128,7 @@ export default function GenGDashboard() {
     ];
 
     return trendData.filter((d) => d.value > 0);
-  }, [data, selectedTeam, selectedPlatform]);
+  }, [data, selectedTeam, selectedPlatform, selectedOfficialCostream]);
 
   // ==========================================================
   // TOP 5
@@ -1155,10 +1202,13 @@ export default function GenGDashboard() {
             ).trim() ===
               selectedStage;
 
+          const officialCostreamMatch = matchesOfficialCostream(r);
+
           return (
             teamMatch &&
             yearMatch &&
-            stageMatch
+            stageMatch &&
+            officialCostreamMatch
           );
         });
 
@@ -1209,6 +1259,7 @@ export default function GenGDashboard() {
       selectedTeam,
       selectedYear,
       selectedStage,
+      selectedOfficialCostream,
     ]);
 
   // ==========================================================
@@ -1287,7 +1338,7 @@ export default function GenGDashboard() {
             alignItems: "flex-end",
             marginBottom: 18,
             gap: 20,
-            flexWrap: "wrap", // 창이 좁아지면 아래로 떨어지게 처리
+            flexWrap: "wrap",
           }}
         >
           <div>
@@ -1307,12 +1358,12 @@ export default function GenGDashboard() {
 
             <h1
               style={{
-                fontSize: "clamp(22px, 4vw, 30px)", // 화면 크기에 따라 글씨 크기 유연 조절
+                fontSize: "clamp(22px, 4vw, 30px)",
                 fontWeight: 800,
                 margin: 0,
                 letterSpacing: -0.5,
                 color: "#FAFAFC",
-                lineHeight: 1.3, // 글씨 간격(행간)을 넉넉히 주어 겹침 방지
+                lineHeight: 1.3,
               }}
             >
               구단별 시청자 데이터 대시보드
@@ -1447,6 +1498,13 @@ export default function GenGDashboard() {
                 setSelectedPlatform
               }
             />
+
+            <FilterSelect
+              label="Stream Type"
+              value={selectedOfficialCostream}
+              options={filterOptions.officialCostreams}
+              onChange={setSelectedOfficialCostream}
+            />
           </div>
 
           <div
@@ -1498,6 +1556,15 @@ export default function GenGDashboard() {
               }}
             >
               {selectedPlatform}
+            </span>
+            {" · "}
+            <span
+              style={{
+                color:
+                  "#E5E7F0",
+              }}
+            >
+              Stream: {selectedOfficialCostream}
             </span>
           </div>
         </div>
@@ -1551,6 +1618,7 @@ export default function GenGDashboard() {
                 <span style={{ fontSize: 12, color: TEXT_DIM, fontWeight: 400 }}>
                   ({TEAM_NOTES[selectedTeam].nameKo}) 데이터 분석 노트
                 </span>
+
               </div>
 
               <div
