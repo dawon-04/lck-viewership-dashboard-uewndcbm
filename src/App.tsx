@@ -39,6 +39,7 @@ type DashboardRow = {
   Stage: string;
   Split: string;
   Channel_Type_Final?: string;
+  "Local/Global"?: string;
   [key: string]: string;
 };
 
@@ -371,12 +372,24 @@ export default function GenGDashboard() {
   const [selectedPlatform, setSelectedPlatform] = useState("All");
   const [selectedChannelTypeFinal, setSelectedChannelTypeFinal] =
     useState("All");
+  const [selectedLocalGlobal, setSelectedLocalGlobal] =
+    useState("All");
 
   // ----------------------------------------------------------
   // Channel Type helper
   // ----------------------------------------------------------
   const getChannelTypeFinalVal = (r: DashboardRow) => {
     const raw = r.Channel_Type_Final || "";
+    return String(raw).trim()
+      ? String(raw).trim()
+      : "Unclassified";
+  };
+
+  // ----------------------------------------------------------
+  // Local/Global helper (실제 Local/Global 컬럼 값 사용)
+  // ----------------------------------------------------------
+  const getLocalGlobalVal = (r: DashboardRow) => {
+    const raw = r["Local/Global"] || "";
     return String(raw).trim()
       ? String(raw).trim()
       : "Unclassified";
@@ -448,16 +461,22 @@ export default function GenGDashboard() {
         selectedChannelTypeFinal === "All" ||
         getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
 
+      const localGlobalMatch =
+        selectedLocalGlobal === "All" ||
+        getLocalGlobalVal(r) === selectedLocalGlobal;
+
       return (
         yearMatch &&
         stageMatch &&
         teamMatch &&
         platformMatch &&
-        channelTypeFinalMatch
+        channelTypeFinalMatch &&
+        localGlobalMatch
       );
     });
   }, [
     data,
+    selectedLocalGlobal,
     selectedYear,
     selectedStage,
     selectedTeam,
@@ -654,12 +673,26 @@ export default function GenGDashboard() {
       ...rawChannels.sort((a, b) => a.localeCompare(b)),
     ];
 
+    // --------------------------------------------------------
+    // LOCAL / GLOBAL
+    // --------------------------------------------------------
+    const rawLocalGlobals = getUniqueOptions(
+      "localGlobal",
+      (r) => getLocalGlobalVal(r)
+    );
+
+    const localGlobals = [
+      "All",
+      ...rawLocalGlobals.sort((a, b) => a.localeCompare(b)),
+    ];
+
     return {
       years,
       stages,
       teams,
       platforms,
       channelTypeFinals,
+      localGlobals,
     };
   }, [
     data,
@@ -668,6 +701,7 @@ export default function GenGDashboard() {
     selectedTeam,
     selectedPlatform,
     selectedChannelTypeFinal,
+    selectedLocalGlobal,
   ]);
 
   // ==========================================================
@@ -717,6 +751,15 @@ export default function GenGDashboard() {
     ) {
       setSelectedChannelTypeFinal("All");
     }
+
+    if (
+      selectedLocalGlobal !== "All" &&
+      !dynamicFilterOptions.localGlobals.includes(
+        selectedLocalGlobal
+      )
+    ) {
+      setSelectedLocalGlobal("All");
+    }
   }, [dynamicFilterOptions]);
 
   // ==========================================================
@@ -728,6 +771,7 @@ export default function GenGDashboard() {
     setSelectedTeam("All");
     setSelectedPlatform("All");
     setSelectedChannelTypeFinal("All");
+    setSelectedLocalGlobal("All");
   };
 
   // ==========================================================
@@ -751,15 +795,21 @@ export default function GenGDashboard() {
         selectedChannelTypeFinal === "All" ||
         getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
 
+      const localGlobalMatch =
+        selectedLocalGlobal === "All" ||
+        getLocalGlobalVal(r) === selectedLocalGlobal;
+
       return (
         yearMatch &&
         stageMatch &&
         platformMatch &&
-        channelTypeFinalMatch
+        channelTypeFinalMatch &&
+        localGlobalMatch
       );
     });
   }, [
     data,
+    selectedLocalGlobal,
     selectedYear,
     selectedStage,
     selectedPlatform,
@@ -830,6 +880,10 @@ export default function GenGDashboard() {
           getChannelTypeFinalVal(r) ===
             selectedChannelTypeFinal;
 
+        const localGlobalMatch =
+          selectedLocalGlobal === "All" ||
+          getLocalGlobalVal(r) === selectedLocalGlobal;
+
         const stage = cleanValue(r.Stage);
 
         const isFirstHalf = [
@@ -843,7 +897,8 @@ export default function GenGDashboard() {
           cleanValue(r.Year) === year &&
           isFirstHalf &&
           platformMatch &&
-          channelTypeFinalMatch
+          channelTypeFinalMatch &&
+          localGlobalMatch
         );
       });
     };
@@ -911,6 +966,7 @@ export default function GenGDashboard() {
     data,
     selectedPlatform,
     selectedChannelTypeFinal,
+    selectedLocalGlobal,
   ]);
 
   // ==========================================================
@@ -931,6 +987,10 @@ export default function GenGDashboard() {
         getChannelTypeFinalVal(r) ===
           selectedChannelTypeFinal;
 
+      const localGlobalMatch =
+        selectedLocalGlobal === "All" ||
+        getLocalGlobalVal(r) === selectedLocalGlobal;
+
       const teamMatch =
         selectedTeam === "All" ||
         cleanValue(r.Team_Full) === selectedTeam;
@@ -939,6 +999,7 @@ export default function GenGDashboard() {
         yearMatch &&
         platformMatch &&
         channelTypeFinalMatch &&
+        localGlobalMatch &&
         teamMatch
       );
     });
@@ -984,6 +1045,7 @@ export default function GenGDashboard() {
     selectedYear,
     selectedPlatform,
     selectedChannelTypeFinal,
+    selectedLocalGlobal,
   ]);
 
   const stageChartData = useMemo(() => {
@@ -1016,6 +1078,10 @@ export default function GenGDashboard() {
               getChannelTypeFinalVal(r) ===
                 selectedChannelTypeFinal;
 
+            const localGlobalMatch =
+              selectedLocalGlobal === "All" ||
+              getLocalGlobalVal(r) === selectedLocalGlobal;
+
             const stage = cleanValue(r.Stage);
 
             const isFirstHalf = [
@@ -1029,6 +1095,7 @@ export default function GenGDashboard() {
               teamMatch &&
               platformMatch &&
               channelTypeFinalMatch &&
+              localGlobalMatch &&
               cleanValue(r.Year) === yrVal &&
               isFirstHalf
             );
@@ -1052,6 +1119,7 @@ export default function GenGDashboard() {
     selectedTeam,
     selectedPlatform,
     selectedChannelTypeFinal,
+    selectedLocalGlobal,
   ]);
 
   // ==========================================================
@@ -1118,11 +1186,16 @@ export default function GenGDashboard() {
         getChannelTypeFinalVal(r) ===
           selectedChannelTypeFinal;
 
+      const localGlobalMatch =
+        selectedLocalGlobal === "All" ||
+        getLocalGlobalVal(r) === selectedLocalGlobal;
+
       return (
         teamMatch &&
         yearMatch &&
         stageMatch &&
-        channelTypeFinalMatch
+        channelTypeFinalMatch &&
+        localGlobalMatch
       );
     });
 
@@ -1159,6 +1232,7 @@ export default function GenGDashboard() {
     selectedYear,
     selectedStage,
     selectedChannelTypeFinal,
+    selectedLocalGlobal,
   ]);
 
   // ==========================================================
@@ -1361,6 +1435,15 @@ export default function GenGDashboard() {
                 dynamicFilterOptions.channelTypeFinals
               }
               onChange={setSelectedChannelTypeFinal}
+            />
+
+            <FilterSelect
+              label="Local/Global"
+              value={selectedLocalGlobal}
+              options={
+                dynamicFilterOptions.localGlobals
+              }
+              onChange={setSelectedLocalGlobal}
             />
           </div>
         </div>
