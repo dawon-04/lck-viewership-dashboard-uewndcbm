@@ -105,19 +105,19 @@ const TEAM_NOTES = {
   },
   "BNK FEARX": {
     nameKo: "BNK 피어엑스",
-    note: "Team BattleComics → SANDBOX Gaming(2018) → Liiv SANDBOX(2020, KB국민은행) → FearX(2024) → BNK FearX(2024, BNK금융그룹) 순으로 리브랜딩.",
+    note: "Team BattleComics → SANDBOX Gaming(2018) → Liiv SANDBOX(2020) → FearX(2024) → BNK FearX(2024) 순으로 리브랜딩.",
   },
   "KIWOOM DRX": {
     nameKo: "키움 DRX",
-    note: "Incredible Miracle(2012) → Longzhu Gaming → Kingzone DragonX(2018) → DragonX(2019) → DRX(2020) → 2026년 키움증권 스폰서십으로 현재 명칭. 2022 롤드컵 우승(플레이-인부터 출발해 우승한 유일 사례).",
+    note: "Incredible Miracle(2012) → Longzhu Gaming → Kingzone DragonX(2018) → DragonX(2019) → DRX(2020) → 2026년 키움증권 스폰서십.",
   },
   "HANJIN BRION": {
     nameKo: "한진 브리온",
-    note: "Team BRION → Fredit BRION(2020~2022) → OK저축은행 브리온(2023~2025) → 2026년 한진 스폰서십으로 현재 명칭.",
+    note: "Team BRION → Fredit BRION → OK저축은행 브리온 → 2026년 한진 스폰서십.",
   },
   "DN SOOPers": {
     nameKo: "DN 수퍼스",
-    note: "광동 프릭스 → DN Freecs → DN SOOPers 순으로 리브랜딩. SOOPers는 플랫폼 SOOP 스폰서십에서 유래.",
+    note: "광동 프릭스 → DN Freecs → DN SOOPers 순으로 리브랜딩.",
   },
 };
 
@@ -172,7 +172,7 @@ function SectionLabel({ index, title }) {
       <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: TEXT_DIM, letterSpacing: 1 }}>
         {index}
       </span>
-      <h2 style={{ fontSize: 19, fontWeight: 700, color: "#F2F3F7", margin: 0 }}>{title}</h2>
+      <h2 style={{ fontSize: 19, fontWeight: 700, color: "#F2F3F7", margin: 0 }>{title}</h2>
       <div style={{ flex: 1, height: 1, background: BORDER }} />
     </div>
   );
@@ -270,79 +270,17 @@ export default function GenGDashboard() {
         setData(results.data);
         setLoading(false);
       },
-      error: (err) => {
+      error: () => {
         setError("Google Sheets 데이터를 불러오지 못했습니다.");
         setLoading(false);
       },
     });
   }, []);
 
-  // ==========================================================
-  // DYNAMIC / CASCADING FILTER OPTIONS (정확한 교차 종속 필터링)
-  // ==========================================================
-  const dynamicFilterOptions = useMemo(() => {
-    const isValidMatch = (row: DashboardRow, targetKey: string) => {
-      const rowYear = String(row.Year || "").trim();
-      const rowStage = String(row.Stage || "").trim();
-      const rowTeam = String(row.Team_Full || "").trim();
-      const rowPlatform = String(row.Platform || "").trim();
-      const rowChannel = getChannelTypeFinalVal(row);
-
-      if (targetKey !== "year" && selectedYear !== "All" && rowYear !== selectedYear) return false;
-      if (targetKey !== "stage" && selectedStage !== "All" && rowStage !== selectedStage) return false;
-      if (targetKey !== "team" && selectedTeam !== "All" && rowTeam !== selectedTeam) return false;
-      if (targetKey !== "platform" && selectedPlatform !== "All" && rowPlatform !== selectedPlatform) return false;
-      if (targetKey !== "channel" && selectedChannelTypeFinal !== "All" && rowChannel !== selectedChannelTypeFinal) return false;
-
-      return true;
-    };
-
-    const getUniqueValues = (key: string, getter: (r: DashboardRow) => string) => {
-      const subset = data.filter((r) => isValidMatch(r, key));
-      return Array.from(new Set(subset.map(getter).filter((v) => v !== "")));
-    };
-
-    const years = ["All", ...getUniqueValues("year", (r) => String(r.Year || "").trim()).sort()];
-
-    const rawStages = getUniqueValues("stage", (r) => String(r.Stage || "").trim());
-    const orderedStages = STAGE_ORDER.filter((s) => rawStages.includes(s));
-    const otherStages = rawStages.filter((s) => !STAGE_ORDER.includes(s)).sort();
-    const stages = ["All", ...orderedStages, ...otherStages];
-
-    const teams = ["All", ...getUniqueValues("team", (r) => String(r.Team_Full || "").trim()).sort()];
-    const platforms = ["All", ...getUniqueValues("platform", (r) => String(r.Platform || "").trim()).sort()];
-    const channels = ["All", ...getUniqueValues("channel", (r) => getChannelTypeFinalVal(r)).sort()];
-
-    return {
-      years,
-      stages,
-      teams,
-      platforms,
-      channelTypeFinals: channels,
-    };
-  }, [
-    data,
-    selectedYear,
-    selectedStage,
-    selectedTeam,
-    selectedPlatform,
-    selectedChannelTypeFinal,
-  ]);
-
-  // 유효하지 않은 선택값 자동 보정 (다른 조건 변경 시 기존 선택값이 사라진 경우 "All"로 롤백)
-  useEffect(() => {
-    if (selectedYear !== "All" && !dynamicFilterOptions.years.includes(selectedYear)) setSelectedYear("All");
-    if (selectedStage !== "All" && !dynamicFilterOptions.stages.includes(selectedStage)) setSelectedStage("All");
-    if (selectedTeam !== "All" && !dynamicFilterOptions.teams.includes(selectedTeam)) setSelectedTeam("All");
-    if (selectedPlatform !== "All" && !dynamicFilterOptions.platforms.includes(selectedPlatform)) setSelectedPlatform("All");
-    if (selectedChannelTypeFinal !== "All" && !dynamicFilterOptions.channelTypeFinals.includes(selectedChannelTypeFinal)) {
-      setSelectedChannelTypeFinal("All");
-    }
-  }, [dynamicFilterOptions]);
-
   const matchesStage = (row, stage) => stage === "All" || String(row.Stage || "").trim() === stage;
   const matchesChannelTypeFinal = (row) => selectedChannelTypeFinal === "All" || getChannelTypeFinalVal(row) === selectedChannelTypeFinal;
 
+  // 메인 필터 적용 결과 (모든 KPI / 차트의 기준)
   const filteredData = useMemo(() => {
     return data.filter((r) => {
       const yearMatch = selectedYear === "All" || String(r.Year || "").trim() === selectedYear;
@@ -353,6 +291,56 @@ export default function GenGDashboard() {
       return yearMatch && stageMatch && teamMatch && platformMatch && channelTypeFinalMatch;
     });
   }, [data, selectedYear, selectedStage, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
+
+  // ==========================================================
+  // 교차 종속 드롭다운 옵션 계산 (나를 제외한 나머지 조건 교차 검증)
+  // ==========================================================
+  const dynamicFilterOptions = useMemo(() => {
+    const matchRowByOthers = (row: DashboardRow, ignore: string) => {
+      const y = String(row.Year || "").trim();
+      const s = String(row.Stage || "").trim();
+      const t = String(row.Team_Full || "").trim();
+      const p = String(row.Platform || "").trim();
+      const c = getChannelTypeFinalVal(row);
+
+      if (ignore !== "year" && selectedYear !== "All" && y !== selectedYear) return false;
+      if (ignore !== "stage" && selectedStage !== "All" && s !== selectedStage) return false;
+      if (ignore !== "team" && selectedTeam !== "All" && t !== selectedTeam) return false;
+      if (ignore !== "platform" && selectedPlatform !== "All" && p !== selectedPlatform) return false;
+      if (ignore !== "channel" && selectedChannelTypeFinal !== "All" && c !== selectedChannelTypeFinal) return false;
+      return true;
+    };
+
+    const extractUnique = (key: string, getter: (r: DashboardRow) => string) => {
+      const subset = data.filter((r) => matchRowByOthers(r, key));
+      return Array.from(new Set(subset.map(getter).filter((v) => v !== ""))).sort();
+    };
+
+    const years = ["All", ...extractUnique("year", (r) => String(r.Year || "").trim())];
+    
+    const stageSubset = data.filter((r) => matchRowByOthers(r, "stage"));
+    const rawStages = Array.from(new Set(stageSubset.map((r) => String(r.Stage || "").trim()).filter(Boolean)));
+    const orderedStages = STAGE_ORDER.filter((s) => rawStages.includes(s));
+    const extraStages = rawStages.filter((s) => !STAGE_ORDER.includes(s)).sort();
+    const stages = ["All", ...orderedStages, ...extraStages];
+
+    const teams = ["All", ...extractUnique("team", (r) => String(r.Team_Full || "").trim())];
+    const platforms = ["All", ...extractUnique("platform", (r) => String(r.Platform || "").trim())];
+    const channels = ["All", ...extractUnique("channel", (r) => getChannelTypeFinalVal(r))];
+
+    return { years, stages, teams, platforms, channelTypeFinals: channels };
+  }, [data, selectedYear, selectedStage, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
+
+  // 유효성 벗어난 선택값 자동 초기화
+  useEffect(() => {
+    if (selectedYear !== "All" && !dynamicFilterOptions.years.includes(selectedYear)) setSelectedYear("All");
+    if (selectedStage !== "All" && !dynamicFilterOptions.stages.includes(selectedStage)) setSelectedStage("All");
+    if (selectedTeam !== "All" && !dynamicFilterOptions.teams.includes(selectedTeam)) setSelectedTeam("All");
+    if (selectedPlatform !== "All" && !dynamicFilterOptions.platforms.includes(selectedPlatform)) setSelectedPlatform("All");
+    if (selectedChannelTypeFinal !== "All" && !dynamicFilterOptions.channelTypeFinals.includes(selectedChannelTypeFinal)) {
+      setSelectedChannelTypeFinal("All");
+    }
+  }, [dynamicFilterOptions]);
 
   const resetFilters = () => {
     setSelectedYear("All");
@@ -404,32 +392,6 @@ export default function GenGDashboard() {
       return { team, y2025: avg2025, y2026: avg2026, yoy: avg2025 > 0 ? Number((((avg2026 / avg2025) - 1) * 100).toFixed(1)) : 0 };
     }).sort((a, b) => b.y2026 - a.y2026);
   }, [data, selectedPlatform, selectedChannelTypeFinal]);
-
-  const selectedHalfYear = useMemo(() => {
-    if (selectedTeam === "All") {
-      const getFirstHalfRows = (yr) =>
-        data.filter((r) => {
-          const stage = String(r.Stage || "").trim();
-          const isFirstHalf = ["LCK Cup", "Split 1", "Split 2 — Regular Season", "Split 2 — Road to MSI"].includes(stage);
-          return Number(r.Year) === yr && isFirstHalf && (selectedPlatform === "All" || String(r.Platform || "").trim() === selectedPlatform) && matchesChannelTypeFinal(r);
-        });
-      const y2025 = Math.round(avg(getFirstHalfRows(2025).map((r) => toNumber(r.Avg_Viewers))));
-      const y2026 = Math.round(avg(getFirstHalfRows(2026).map((r) => toNumber(r.Avg_Viewers))));
-      return { y2025, y2026, yoy: y2025 > 0 ? Number((((y2026 / y2025) - 1) * 100).toFixed(1)) : 0 };
-    }
-    const row = HALF_YEAR_COMPARE.find((r) => r.team === selectedTeam);
-    return row ? { y2025: row.y2025, y2026: row.y2026, yoy: row.yoy } : { y2025: 0, y2026: 0, yoy: 0 };
-  }, [HALF_YEAR_COMPARE, selectedTeam, data, selectedPlatform, selectedChannelTypeFinal]);
-
-  const selectedHalfYearRank = useMemo(() => {
-    if (selectedTeam === "All") return { y2025: 0, y2026: 0 };
-    const rankForYear = (key) => {
-      const sorted = [...HALF_YEAR_COMPARE].filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
-      const idx = sorted.findIndex((r) => r.team === selectedTeam);
-      return idx >= 0 ? idx + 1 : 0;
-    };
-    return { y2025: rankForYear("y2025"), y2026: rankForYear("y2026") };
-  }, [HALF_YEAR_COMPARE, selectedTeam]);
 
   const stageRow = useMemo(() => {
     const baseRows = data.filter((r) => {
@@ -537,7 +499,7 @@ export default function GenGDashboard() {
             </h1>
           </div>
           <div style={{ fontSize: 11.5, color: TEXT_DIM, textAlign: "right", lineHeight: 1.6 }}>
-            Interactive Dashboard (Cascading Cross-filtering Active)
+            Interactive Dashboard (Dynamic Filtering Active)
             <br />
             2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
           </div>
@@ -547,7 +509,7 @@ export default function GenGDashboard() {
         <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 16, marginBottom: 22 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 12, color: "#E5E7F0", fontWeight: 700, letterSpacing: 0.5 }}>
-              FILTERS (교차 종속 필터링 적용됨)
+              FILTERS (동적 교차 필터링 적용)
             </div>
             <button onClick={resetFilters} style={{ background: "transparent", border: `1px solid ${BORDER}`, color: TEXT_DIM, borderRadius: 4, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>
               Reset filters
@@ -631,9 +593,7 @@ export default function GenGDashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
-              선택한 조건에 해당하는 데이터가 없습니다.
-            </div>
+            <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>선택한 조건에 해당하는 데이터가 없습니다.</div>
           )}
         </div>
 
@@ -671,9 +631,7 @@ export default function GenGDashboard() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
-              선택한 조건에 해당하는 데이터가 없습니다.
-            </div>
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>선택한 조건에 해당하는 데이터가 없습니다.</div>
           )}
         </div>
 
@@ -691,9 +649,7 @@ export default function GenGDashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
-              선택한 조건에 해당하는 데이터가 없습니다.
-            </div>
+            <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>선택한 조건에 해당하는 데이터가 없습니다.</div>
           )}
         </div>
 
