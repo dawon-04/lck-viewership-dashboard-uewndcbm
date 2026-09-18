@@ -1,4 +1,3 @@
-```tsx
 // @ts-nocheck
 
 import React, { useState, useMemo, useEffect } from "react";
