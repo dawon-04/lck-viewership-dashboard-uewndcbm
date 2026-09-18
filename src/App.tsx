@@ -236,6 +236,9 @@ function FilterSelect({ label, value, options, onChange }) {
   );
 }
 
+// ============================================================
+// Main
+// ============================================================
 export default function GenGDashboard() {
   const [data, setData] = useState<DashboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,39 +278,58 @@ export default function GenGDashboard() {
   }, []);
 
   // ==========================================================
-  // 완전 교차(Cascading) 동적 옵션 계산 로직
+  // DYNAMIC / CASCADING FILTER OPTIONS (정확한 교차 종속 필터링)
   // ==========================================================
   const dynamicFilterOptions = useMemo(() => {
-    const matchExcept = (r: DashboardRow, ignore: string) => {
-      const yOk = ignore === "year" || selectedYear === "All" || String(r.Year || "").trim() === selectedYear;
-      const sOk = ignore === "stage" || selectedStage === "All" || String(r.Stage || "").trim() === selectedStage;
-      const tOk = ignore === "team" || selectedTeam === "All" || String(r.Team_Full || "").trim() === selectedTeam;
-      const pOk = ignore === "platform" || selectedPlatform === "All" || String(r.Platform || "").trim() === selectedPlatform;
-      const cOk = ignore === "channel" || selectedChannelTypeFinal === "All" || getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
-      return yOk && sOk && tOk && pOk && cOk;
+    const isValidMatch = (row: DashboardRow, targetKey: string) => {
+      const rowYear = String(row.Year || "").trim();
+      const rowStage = String(row.Stage || "").trim();
+      const rowTeam = String(row.Team_Full || "").trim();
+      const rowPlatform = String(row.Platform || "").trim();
+      const rowChannel = getChannelTypeFinalVal(row);
+
+      if (targetKey !== "year" && selectedYear !== "All" && rowYear !== selectedYear) return false;
+      if (targetKey !== "stage" && selectedStage !== "All" && rowStage !== selectedStage) return false;
+      if (targetKey !== "team" && selectedTeam !== "All" && rowTeam !== selectedTeam) return false;
+      if (targetKey !== "platform" && selectedPlatform !== "All" && rowPlatform !== selectedPlatform) return false;
+      if (targetKey !== "channel" && selectedChannelTypeFinal !== "All" && rowChannel !== selectedChannelTypeFinal) return false;
+
+      return true;
     };
 
-    const extractVals = (key: string, extractor: (r: DashboardRow) => string) => {
-      const subset = data.filter((r) => matchExcept(r, key));
-      const vals = Array.from(new Set(subset.map(extractor).filter((v) => v && v !== "")));
-      return vals;
+    const getUniqueValues = (key: string, getter: (r: DashboardRow) => string) => {
+      const subset = data.filter((r) => isValidMatch(r, key));
+      return Array.from(new Set(subset.map(getter).filter((v) => v !== "")));
     };
 
-    const years = ["All", ...extractVals("year", (r) => String(r.Year || "").trim()).sort()];
-    
-    const rawStages = extractVals("stage", (r) => String(r.Stage || "").trim());
+    const years = ["All", ...getUniqueValues("year", (r) => String(r.Year || "").trim()).sort()];
+
+    const rawStages = getUniqueValues("stage", (r) => String(r.Stage || "").trim());
     const orderedStages = STAGE_ORDER.filter((s) => rawStages.includes(s));
     const otherStages = rawStages.filter((s) => !STAGE_ORDER.includes(s)).sort();
     const stages = ["All", ...orderedStages, ...otherStages];
 
-    const teams = ["All", ...extractVals("team", (r) => String(r.Team_Full || "").trim()).sort()];
-    const platforms = ["All", ...extractVals("platform", (r) => String(r.Platform || "").trim()).sort()];
-    const channels = ["All", ...extractVals("channel", (r) => getChannelTypeFinalVal(r)).sort()];
+    const teams = ["All", ...getUniqueValues("team", (r) => String(r.Team_Full || "").trim()).sort()];
+    const platforms = ["All", ...getUniqueValues("platform", (r) => String(r.Platform || "").trim()).sort()];
+    const channels = ["All", ...getUniqueValues("channel", (r) => getChannelTypeFinalVal(r)).sort()];
 
-    return { years, stages, teams, platforms, channelTypeFinals: channels };
-  }, [data, selectedYear, selectedStage, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
+    return {
+      years,
+      stages,
+      teams,
+      platforms,
+      channelTypeFinals: channels,
+    };
+  }, [
+    data,
+    selectedYear,
+    selectedStage,
+    selectedTeam,
+    selectedPlatform,
+    selectedChannelTypeFinal,
+  ]);
 
-  // 유효하지 않은 선택값 자동 리셋 보정
+  // 유효하지 않은 선택값 자동 보정 (다른 조건 변경 시 기존 선택값이 사라진 경우 "All"로 롤백)
   useEffect(() => {
     if (selectedYear !== "All" && !dynamicFilterOptions.years.includes(selectedYear)) setSelectedYear("All");
     if (selectedStage !== "All" && !dynamicFilterOptions.stages.includes(selectedStage)) setSelectedStage("All");
