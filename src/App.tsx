@@ -450,7 +450,6 @@ export default function GenGDashboard() {
   const [selectedPlatform, setSelectedPlatform] =
     useState("All");
 
-  // [Channel_Type_Final 필터 상태]
   const [selectedChannelTypeFinal, setSelectedChannelTypeFinal] =
     useState("All");
 
@@ -503,126 +502,144 @@ export default function GenGDashboard() {
   }, []);
 
   // ==========================================================
-  // FILTER OPTIONS
+  // DYNAMIC / CASCADING FILTER OPTIONS (교차 필터링 옵션 동적 계산)
   // ==========================================================
-  const filterOptions =
-    useMemo(() => {
-      const years = [
-        ...new Set(
-          data
-            .map((r) =>
-              String(
-                r.Year || ""
-              ).trim()
-            )
-            .filter(Boolean)
-        ),
-      ].sort();
+  const dynamicFilterOptions = useMemo(() => {
+    const getFilteredExcept = (excludeKey: string) => {
+      return data.filter((r) => {
+        const matchYear =
+          excludeKey === "year" ||
+          selectedYear === "All" ||
+          String(r.Year || "").trim() === selectedYear;
 
-      const teams = [
-        ...new Set(
-          data
-            .map((r) =>
-              String(
-                r.Team_Full || ""
-              ).trim()
-            )
-            .filter(Boolean)
-        ),
-      ].sort();
+        const matchStage =
+          excludeKey === "stage" ||
+          selectedStage === "All" ||
+          String(r.Stage || "").trim() === selectedStage;
 
-      const platforms = [
-        ...new Set(
-          data
-            .map((r) =>
-              String(
-                r.Platform || ""
-              ).trim()
-            )
-            .filter(Boolean)
-        ),
-      ].sort();
+        const matchTeam =
+          excludeKey === "team" ||
+          selectedTeam === "All" ||
+          String(r.Team_Full || "").trim() === selectedTeam;
 
-      const channelTypeFinals = [
-        ...new Set(
-          data.map((r) => getChannelTypeFinalVal(r)).filter(Boolean)
-        ),
-      ].sort();
+        const matchPlatform =
+          excludeKey === "platform" ||
+          selectedPlatform === "All" ||
+          String(r.Platform || "").trim() === selectedPlatform;
 
-      return {
-        years: [
-          "All",
-          ...years,
-        ],
+        const matchChannel =
+          excludeKey === "channel" ||
+          selectedChannelTypeFinal === "All" ||
+          getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
 
-        teams: [
-          "All",
-          ...teams,
-        ],
-
-        platforms: [
-          "All",
-          ...platforms,
-        ],
-
-        channelTypeFinals: [
-          "All",
-          ...channelTypeFinals,
-        ],
-      };
-    }, [data]);
-
-  // ==========================================================
-  // Stage options
-  // ==========================================================
-  const stageOptions =
-    useMemo(() => {
-      const stagesInData = [
-        ...new Set(
-          data
-            .map((r) =>
-              String(
-                r.Stage || ""
-              ).trim()
-            )
-            .filter(Boolean)
-        ),
-      ];
-
-      const orderedStages =
-        STAGE_ORDER.filter((stage) =>
-          stagesInData.includes(stage)
+        return (
+          matchYear &&
+          matchStage &&
+          matchTeam &&
+          matchPlatform &&
+          matchChannel
         );
+      });
+    };
 
-      const otherStages =
-        stagesInData.filter(
-          (stage) =>
-            !STAGE_ORDER.includes(stage)
-        );
+    const years = [
+      "All",
+      ...new Set(
+        getFilteredExcept("year")
+          .map((r) => String(r.Year || "").trim())
+          .filter(Boolean)
+      ),
+    ].sort();
 
-      return [
-        "All",
-        ...orderedStages,
-        ...otherStages,
-      ];
-    }, [data]);
+    const stagesRaw = [
+      ...new Set(
+        getFilteredExcept("stage")
+          .map((r) => String(r.Stage || "").trim())
+          .filter(Boolean)
+      ),
+    ];
+    const orderedStages = STAGE_ORDER.filter((s) => stagesRaw.includes(s));
+    const otherStages = stagesRaw.filter((s) => !STAGE_ORDER.includes(s));
+    const stages = ["All", ...orderedStages, ...otherStages];
+
+    const teams = [
+      "All",
+      ...new Set(
+        getFilteredExcept("team")
+          .map((r) => String(r.Team_Full || "").trim())
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    const platforms = [
+      "All",
+      ...new Set(
+        getFilteredExcept("platform")
+          .map((r) => String(r.Platform || "").trim())
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    const channelTypes = [
+      "All",
+      ...new Set(
+        getFilteredExcept("channel")
+          .map((r) => getChannelTypeFinalVal(r))
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    return {
+      years,
+      stages,
+      teams,
+      platforms,
+      channelTypeFinals: channelTypes,
+    };
+  }, [
+    data,
+    selectedYear,
+    selectedStage,
+    selectedTeam,
+    selectedPlatform,
+    selectedChannelTypeFinal,
+  ]);
+
+  // 유효하지 않은 선택값 자동 보정 (다른 조건 변경 시 기존 선택값이 사라진 경우 "All"로 롤백)
+  useEffect(() => {
+    if (selectedYear !== "All" && !dynamicFilterOptions.years.includes(selectedYear)) {
+      setSelectedYear("All");
+    }
+    if (selectedStage !== "All" && !dynamicFilterOptions.stages.includes(selectedStage)) {
+      setSelectedStage("All");
+    }
+    if (selectedTeam !== "All" && !dynamicFilterOptions.teams.includes(selectedTeam)) {
+      setSelectedTeam("All");
+    }
+    if (selectedPlatform !== "All" && !dynamicFilterOptions.platforms.includes(selectedPlatform)) {
+      setSelectedPlatform("All");
+    }
+    if (
+      selectedChannelTypeFinal !== "All" &&
+      !dynamicFilterOptions.channelTypeFinals.includes(selectedChannelTypeFinal)
+    ) {
+      setSelectedChannelTypeFinal("All");
+    }
+  }, [
+    dynamicFilterOptions,
+    selectedYear,
+    selectedStage,
+    selectedTeam,
+    selectedPlatform,
+    selectedChannelTypeFinal,
+  ]);
 
   // ==========================================================
   // Stage & ChannelType Matching
   // ==========================================================
-  const matchesStage = (
-    row,
-    stage
-  ) => {
-    if (stage === "All") {
-      return true;
-    }
-
-    return (
-      String(
-        row.Stage || ""
-      ).trim() === stage
-    );
+  const matchesStage = (row, stage) => {
+    if (stage === "All") return true;
+    return String(row.Stage || "").trim() === stage;
   };
 
   const matchesChannelTypeFinal = (row) => {
@@ -633,54 +650,40 @@ export default function GenGDashboard() {
   // ==========================================================
   // FILTERED DATA
   // ==========================================================
-  const filteredData =
-    useMemo(() => {
-      return data.filter((r) => {
-        const yearMatch =
-          selectedYear === "All" ||
-          String(
-            r.Year || ""
-          ).trim() ===
-            selectedYear;
+  const filteredData = useMemo(() => {
+    return data.filter((r) => {
+      const yearMatch =
+        selectedYear === "All" ||
+        String(r.Year || "").trim() === selectedYear;
 
-        const stageMatch =
-          matchesStage(
-            r,
-            selectedStage
-          );
+      const stageMatch = matchesStage(r, selectedStage);
 
-        const teamMatch =
-          selectedTeam === "All" ||
-          String(
-            r.Team_Full || ""
-          ).trim() ===
-            selectedTeam;
+      const teamMatch =
+        selectedTeam === "All" ||
+        String(r.Team_Full || "").trim() === selectedTeam;
 
-        const platformMatch =
-          selectedPlatform === "All" ||
-          String(
-            r.Platform || ""
-          ).trim() ===
-            selectedPlatform;
+      const platformMatch =
+        selectedPlatform === "All" ||
+        String(r.Platform || "").trim() === selectedPlatform;
 
-        const channelTypeFinalMatch = matchesChannelTypeFinal(r);
+      const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
-        return (
-          yearMatch &&
-          stageMatch &&
-          teamMatch &&
-          platformMatch &&
-          channelTypeFinalMatch
-        );
-      });
-    }, [
-      data,
-      selectedYear,
-      selectedStage,
-      selectedTeam,
-      selectedPlatform,
-      selectedChannelTypeFinal,
-    ]);
+      return (
+        yearMatch &&
+        stageMatch &&
+        teamMatch &&
+        platformMatch &&
+        channelTypeFinalMatch
+      );
+    });
+  }, [
+    data,
+    selectedYear,
+    selectedStage,
+    selectedTeam,
+    selectedPlatform,
+    selectedChannelTypeFinal,
+  ]);
 
   // ==========================================================
   // Reset
@@ -696,120 +699,71 @@ export default function GenGDashboard() {
   // ==========================================================
   // TEAM RANKING DATA
   // ==========================================================
-  const rankingData =
-    useMemo(() => {
-      return data.filter((r) => {
-        const yearMatch =
-          selectedYear === "All" ||
-          String(
-            r.Year || ""
-          ).trim() ===
-            selectedYear;
+  const rankingData = useMemo(() => {
+    return data.filter((r) => {
+      const yearMatch =
+        selectedYear === "All" ||
+        String(r.Year || "").trim() === selectedYear;
 
-        const stageMatch =
-          matchesStage(
-            r,
-            selectedStage
-          );
+      const stageMatch = matchesStage(r, selectedStage);
 
-        const platformMatch =
-          selectedPlatform === "All" ||
-          String(
-            r.Platform || ""
-          ).trim() ===
-            selectedPlatform;
+      const platformMatch =
+        selectedPlatform === "All" ||
+        String(r.Platform || "").trim() === selectedPlatform;
 
-        const channelTypeFinalMatch = matchesChannelTypeFinal(r);
+      const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
-        return (
-          yearMatch &&
-          stageMatch &&
-          platformMatch &&
-          channelTypeFinalMatch
-        );
-      });
-    }, [
-      data,
-      selectedYear,
-      selectedStage,
-      selectedPlatform,
-      selectedChannelTypeFinal,
-    ]);
+      return yearMatch && stageMatch && platformMatch && channelTypeFinalMatch;
+    });
+  }, [
+    data,
+    selectedYear,
+    selectedStage,
+    selectedPlatform,
+    selectedChannelTypeFinal,
+  ]);
 
   // ==========================================================
   // TEAM SUMMARY
   // ==========================================================
-  const TEAM_SUMMARY =
-    useMemo(() => {
-      return getTeamSummary(
-        rankingData
-      );
-    }, [rankingData]);
+  const TEAM_SUMMARY = useMemo(() => {
+    return getTeamSummary(rankingData);
+  }, [rankingData]);
 
   // ==========================================================
   // KPI DATA
   // ==========================================================
-  const selectedTeamData =
-    useMemo(() => {
-      if (
-        selectedTeam === "All"
-      ) {
-        const avgViewers =
-          avg(
-            filteredData.map(
-              (r) =>
-                toNumber(
-                  r.Avg_Viewers
-                )
-            )
-          );
-
-        const peakValues =
-          filteredData.map(
-            (r) =>
-              toNumber(
-                r.Peak_Viewers_sub
-              )
-          );
-
-        const peak =
-          peakValues.length
-            ? Math.max(
-                ...peakValues
-              )
-            : 0;
-
-        return {
-          team: "All Teams",
-          avg: Math.round(
-            avgViewers
-          ),
-          peak,
-          n: filteredData.length,
-          rank: 0,
-          vsLeague: 0,
-        };
-      }
-
-      return (
-        TEAM_SUMMARY.find(
-          (t) =>
-            t.team ===
-            selectedTeam
-        ) || {
-          team: selectedTeam,
-          avg: 0,
-          peak: 0,
-          n: 0,
-          rank: 0,
-          vsLeague: 0,
-        }
+  const selectedTeamData = useMemo(() => {
+    if (selectedTeam === "All") {
+      const avgViewers = avg(
+        filteredData.map((r) => toNumber(r.Avg_Viewers))
       );
-    }, [
-      TEAM_SUMMARY,
-      selectedTeam,
-      filteredData,
-    ]);
+      const peakValues = filteredData.map((r) =>
+        toNumber(r.Peak_Viewers_sub)
+      );
+      const peak = peakValues.length ? Math.max(...peakValues) : 0;
+
+      return {
+        team: "All Teams",
+        avg: Math.round(avgViewers),
+        peak,
+        n: filteredData.length,
+        rank: 0,
+        vsLeague: 0,
+      };
+    }
+
+    return (
+      TEAM_SUMMARY.find((t) => t.team === selectedTeam) || {
+        team: selectedTeam,
+        avg: 0,
+        peak: 0,
+        n: 0,
+        rank: 0,
+        vsLeague: 0,
+      }
+    );
+  }, [TEAM_SUMMARY, selectedTeam, filteredData]);
 
   // ==========================================================
   // 01 HALF-YEAR (1H) COMPARISON (상반기 전체 누적 비교)
@@ -861,24 +815,16 @@ export default function GenGDashboard() {
 
         const avg2025 =
           data2025.length > 0
-            ? Math.round(
-                avg(data2025.map((r) => toNumber(r.Avg_Viewers)))
-              )
+            ? Math.round(avg(data2025.map((r) => toNumber(r.Avg_Viewers))))
             : 0;
 
         const avg2026 =
           data2026.length > 0
-            ? Math.round(
-                avg(data2026.map((r) => toNumber(r.Avg_Viewers)))
-              )
+            ? Math.round(avg(data2026.map((r) => toNumber(r.Avg_Viewers))))
             : 0;
 
         const yoy =
-          avg2025 > 0
-            ? Number(
-                (((avg2026 / avg2025) - 1) * 100).toFixed(1)
-              )
-            : 0;
+          avg2025 > 0 ? Number((((avg2026 / avg2025) - 1) * 100).toFixed(1)) : 0;
 
         return {
           team,
@@ -912,8 +858,12 @@ export default function GenGDashboard() {
           );
         });
 
-      const y2025 = Math.round(avg(getFirstHalfRows(2025).map((r) => toNumber(r.Avg_Viewers))));
-      const y2026 = Math.round(avg(getFirstHalfRows(2026).map((r) => toNumber(r.Avg_Viewers))));
+      const y2025 = Math.round(
+        avg(getFirstHalfRows(2025).map((r) => toNumber(r.Avg_Viewers)))
+      );
+      const y2026 = Math.round(
+        avg(getFirstHalfRows(2026).map((r) => toNumber(r.Avg_Viewers)))
+      );
 
       return {
         y2025,
@@ -950,136 +900,57 @@ export default function GenGDashboard() {
   // ==========================================================
   // STAGE PERFORMANCE
   // ==========================================================
-  const stageRow =
-    useMemo(() => {
-      const baseRows =
-        data.filter((r) => {
-          const yearMatch =
-            selectedYear ===
-              "All" ||
-            String(
-              r.Year || ""
-            ).trim() ===
-              selectedYear;
+  const stageRow = useMemo(() => {
+    const baseRows = data.filter((r) => {
+      const yearMatch =
+        selectedYear === "All" || String(r.Year || "").trim() === selectedYear;
 
-          const platformMatch =
-            selectedPlatform ===
-              "All" ||
-            String(
-              r.Platform || ""
-            ).trim() ===
-              selectedPlatform;
+      const platformMatch =
+        selectedPlatform === "All" ||
+        String(r.Platform || "").trim() === selectedPlatform;
 
-          const channelTypeFinalMatch = matchesChannelTypeFinal(r);
+      const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
-          const teamMatch =
-            selectedTeam ===
-              "All" ||
-            String(
-              r.Team_Full || ""
-            ).trim() ===
-              selectedTeam;
+      const teamMatch =
+        selectedTeam === "All" ||
+        String(r.Team_Full || "").trim() === selectedTeam;
 
-          return (
-            yearMatch &&
-            platformMatch &&
-            channelTypeFinalMatch &&
-            teamMatch
-          );
-        });
+      return yearMatch && platformMatch && channelTypeFinalMatch && teamMatch;
+    });
 
-      const getStageAvg =
-        (stage) => {
-          const rows =
-            baseRows.filter(
-              (r) =>
-                String(
-                  r.Stage || ""
-                ).trim() ===
-                stage
-            );
+    const getStageAvg = (stage) => {
+      const rows = baseRows.filter(
+        (r) => String(r.Stage || "").trim() === stage
+      );
+      if (!rows.length) return null;
+      return Math.round(avg(rows.map((r) => toNumber(r.Avg_Viewers))));
+    };
 
-          if (!rows.length) {
-            return null;
-          }
-
-          return Math.round(
-            avg(
-              rows.map(
-                (r) =>
-                  toNumber(
-                    r.Avg_Viewers
-                  )
-              )
-            )
-          );
-        };
-
-      return {
-        team:
-          selectedTeam ===
-          "All"
-            ? "All Teams"
-            : selectedTeam,
-
-        "LCK Cup":
-          getStageAvg(
-            "LCK Cup"
-          ),
-
-        "Split 1":
-          getStageAvg(
-            "Split 1"
-          ),
-
-        "Split 2 — Regular Season":
-          getStageAvg(
-            "Split 2 — Regular Season"
-          ),
-
-        "Split 2 — Road to MSI":
-          getStageAvg(
-            "Split 2 — Road to MSI"
-          ),
-
-        "First Stand":
-          getStageAvg(
-            "First Stand"
-          ),
-
-        MSI:
-          getStageAvg("MSI"),
-
-        "Split 3":
-          getStageAvg("Split 3"),
-
-        Worlds:
-          getStageAvg(
-            "Worlds"
-          ),
-      };
-    }, [
-      data,
-      selectedTeam,
-      selectedYear,
-      selectedPlatform,
-      selectedChannelTypeFinal,
-    ]);
+    return {
+      team: selectedTeam === "All" ? "All Teams" : selectedTeam,
+      "LCK Cup": getStageAvg("LCK Cup"),
+      "Split 1": getStageAvg("Split 1"),
+      "Split 2 — Regular Season": getStageAvg("Split 2 — Regular Season"),
+      "Split 2 — Road to MSI": getStageAvg("Split 2 — Road to MSI"),
+      "First Stand": getStageAvg("First Stand"),
+      MSI: getStageAvg("MSI"),
+      "Split 3": getStageAvg("Split 3"),
+      Worlds: getStageAvg("Worlds"),
+    };
+  }, [data, selectedTeam, selectedYear, selectedPlatform, selectedChannelTypeFinal]);
 
   // ==========================================================
   // STAGE CHART DATA
   // ==========================================================
   const stageChartData = useMemo(() => {
-    return STAGE_ORDER
-      .map((stage) => ({
-        stage,
-        value: stageRow[stage],
-      }))
-      .filter((d) => d.value != null);
+    return STAGE_ORDER.map((stage) => ({
+      stage,
+      value: stageRow[stage],
+    })).filter((d) => d.value != null);
   }, [stageRow]);
 
   // ==========================================================
-  // YEARLY TREND (04 섹션: 상반기 전체 트렌드 비교)
+  // YEARLY TREND
   // ==========================================================
   const YEARLY_TREND = useMemo(() => {
     const getFirstHalfAvg = (yrVal) => {
@@ -1089,13 +960,10 @@ export default function GenGDashboard() {
             const teamMatch =
               selectedTeam === "All" ||
               String(r.Team_Full || "").trim() === selectedTeam;
-
             const platformMatch =
               selectedPlatform === "All" ||
               String(r.Platform || "").trim() === selectedPlatform;
-
             const channelTypeFinalMatch = matchesChannelTypeFinal(r);
-
             const stage = String(r.Stage || "").trim();
             const isFirstHalf =
               stage === "LCK Cup" ||
@@ -1116,14 +984,8 @@ export default function GenGDashboard() {
     };
 
     const trendData = [
-      {
-        year: "2025 상반기",
-        value: getFirstHalfAvg("2025"),
-      },
-      {
-        year: "2026 상반기",
-        value: getFirstHalfAvg("2026"),
-      },
+      { year: "2025 상반기", value: getFirstHalfAvg("2025") },
+      { year: "2026 상반기", value: getFirstHalfAvg("2026") },
     ];
 
     return trendData.filter((d) => d.value > 0);
@@ -1132,174 +994,87 @@ export default function GenGDashboard() {
   // ==========================================================
   // TOP 5
   // ==========================================================
-  const TOP5 =
-    useMemo(() => {
-      const rows = filteredData;
-      const grouped = {};
+  const TOP5 = useMemo(() => {
+    const rows = filteredData;
+    const grouped = {};
 
-      rows.forEach((r) => {
-        const date = r.Date || "Unknown";
-        if (!grouped[date]) {
-          grouped[date] = [];
-        }
-        grouped[date].push(r);
-      });
+    rows.forEach((r) => {
+      const date = r.Date || "Unknown";
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(r);
+    });
 
-      const matches = Object.entries(grouped).map(([date, rows]) => {
-        const peak = Math.max(
-          ...rows.map((r) => toNumber(r.Peak_Viewers_sub))
-        );
+    const matches = Object.entries(grouped).map(([date, rows]) => {
+      const peak = Math.max(
+        ...rows.map((r) => toNumber(r.Peak_Viewers_sub))
+      );
+      const average = Math.round(
+        avg(rows.map((r) => toNumber(r.Avg_Viewers)))
+      );
+      return {
+        date,
+        tag: rows[0]?.Stage || rows[0]?.Tournament || "Event",
+        peak,
+        avg: average,
+      };
+    });
 
-        const average = Math.round(
-          avg(rows.map((r) => toNumber(r.Avg_Viewers)))
-        );
-
-        return {
-          date,
-          tag:
-            rows[0]?.Stage ||
-            rows[0]?.Tournament ||
-            "Event",
-          peak,
-          avg: average,
-        };
-      });
-
-      return matches
-        .sort((a, b) => b.peak - a.peak)
-        .slice(0, 5);
-    }, [filteredData]);
+    return matches.sort((a, b) => b.peak - a.peak).slice(0, 5);
+  }, [filteredData]);
 
   // ==========================================================
   // PLATFORM
   // ==========================================================
-  const PLATFORM_DATA =
-    useMemo(() => {
-      const baseRows =
-        data.filter((r) => {
-          const teamMatch =
-            selectedTeam ===
-              "All" ||
-            String(
-              r.Team_Full || ""
-            ).trim() ===
-              selectedTeam;
+  const PLATFORM_DATA = useMemo(() => {
+    const baseRows = data.filter((r) => {
+      const teamMatch =
+        selectedTeam === "All" ||
+        String(r.Team_Full || "").trim() === selectedTeam;
+      const yearMatch =
+        selectedYear === "All" ||
+        String(r.Year || "").trim() === selectedYear;
+      const stageMatch = matchesStage(r, selectedStage);
+      const channelTypeFinalMatch = matchesChannelTypeFinal(r);
 
-          const yearMatch =
-            selectedYear ===
-              "All" ||
-            String(
-              r.Year || ""
-            ).trim() ===
-              selectedYear;
+      return teamMatch && yearMatch && stageMatch && channelTypeFinalMatch;
+    });
 
-          const stageMatch =
-            selectedStage ===
-              "All" ||
-            String(
-              r.Stage || ""
-            ).trim() ===
-              selectedStage;
+    const platforms = [
+      ...new Set(
+        baseRows.map((r) => String(r.Platform || "").trim()).filter(Boolean)
+      ),
+    ];
 
-          const channelTypeFinalMatch = matchesChannelTypeFinal(r);
-
-          return (
-            teamMatch &&
-            yearMatch &&
-            stageMatch &&
-            channelTypeFinalMatch
-          );
-        });
-
-      const platforms = [
-        ...new Set(
-          baseRows
-            .map((r) =>
-              String(
-                r.Platform || ""
-              ).trim()
-            )
-            .filter(Boolean)
-        ),
-      ];
-
-      return platforms
-        .map((platform) => {
-          const rows =
-            baseRows.filter(
-              (r) =>
-                String(
-                  r.Platform || ""
-                ).trim() ===
-                platform
-            );
-
-          return {
-            platform,
-            avg: Math.round(
-              avg(
-                rows.map(
-                  (r) =>
-                    toNumber(
-                      r.Avg_Viewers
-                    )
-                )
-              )
-            ),
-            n: rows.length,
-          };
-        })
-        .sort(
-          (a, b) =>
-            b.avg - a.avg
+    return platforms
+      .map((platform) => {
+        const rows = baseRows.filter(
+          (r) => String(r.Platform || "").trim() === platform
         );
-    }, [
-      data,
-      selectedTeam,
-      selectedYear,
-      selectedStage,
-      selectedChannelTypeFinal,
-    ]);
+        return {
+          platform,
+          avg: Math.round(
+            avg(rows.map((r) => toNumber(r.Avg_Viewers)))
+          ),
+          n: rows.length,
+        };
+      })
+      .sort((a, b) => b.avg - a.avg);
+  }, [data, selectedTeam, selectedYear, selectedStage, selectedChannelTypeFinal]);
 
   // ==========================================================
-  // Loading
+  // Loading & Error
   // ==========================================================
   if (loading) {
     return (
-      <div
-        style={{
-          background: BG,
-          minHeight: "100vh",
-          color: "#E5E7F0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent:
-            "center",
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        }}
-      >
-        Google Sheets 데이터를
-        불러오는 중...
+      <div style={{ background: BG, minHeight: "100vh", color: "#E5E7F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Google Sheets 데이터를 불러오는 중...
       </div>
     );
   }
 
-  // ==========================================================
-  // Error
-  // ==========================================================
   if (error) {
     return (
-      <div
-        style={{
-          background: BG,
-          minHeight: "100vh",
-          color: RED,
-          padding: 40,
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        }}
-      >
+      <div style={{ background: BG, minHeight: "100vh", color: RED, padding: 40 }}>
         {error}
       </div>
     );
@@ -1314,1450 +1089,260 @@ export default function GenGDashboard() {
         background: BG,
         minHeight: "100vh",
         color: "#E5E7F0",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        padding:
-          "28px 24px 60px",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        padding: "28px 24px 60px",
       }}
     >
-      <div
-        style={{
-          maxWidth: 1080,
-          margin: "0 auto",
-        }}
-      >
-        {/* ==================================================
-            HEADER
-        ================================================== */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "flex-end",
-            marginBottom: 18,
-            gap: 20,
-            flexWrap: "wrap",
-          }}
-        >
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        {/* HEADER */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 18, gap: 20, flexWrap: "wrap" }}>
           <div>
-            <div
-              style={{
-                fontSize: 12,
-                color: GOLD,
-                letterSpacing: 2,
-                fontWeight: 700,
-                marginBottom: 6,
-                fontFamily:
-                  "ui-monospace, monospace",
-              }}
-            >
+            <div style={{ fontSize: 12, color: GOLD, letterSpacing: 2, fontWeight: 700, marginBottom: 6, fontFamily: "ui-monospace, monospace" }}>
               LCK VIEWERSHIP (2025 전체 · 2026 상반기)
             </div>
-
-            <h1
-              style={{
-                fontSize: "clamp(22px, 4vw, 30px)",
-                fontWeight: 800,
-                margin: 0,
-                letterSpacing: -0.5,
-                color: "#FAFAFC",
-                lineHeight: 1.3,
-              }}
-            >
+            <h1 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, margin: 0, letterSpacing: -0.5, color: "#FAFAFC" }}>
               구단별 시청자 데이터 대시보드
             </h1>
           </div>
-
-          <div
-            style={{
-              fontSize: 11.5,
-              color: TEXT_DIM,
-              textAlign: "right",
-              lineHeight: 1.6,
-            }}
-          >
-            Interactive Dashboard
+          <div style={{ fontSize: 11.5, color: TEXT_DIM, textAlign: "right", lineHeight: 1.6 }}>
+            Interactive Dashboard (Dynamic Filtering Active)
             <br />
-            2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
+            2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
           </div>
         </div>
 
-        {/* ==================================================
-            FILTER BAR
-        ================================================== */}
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding: 16,
-            marginBottom: 22,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent:
-                "space-between",
-              gap: 12,
-              marginBottom: 12,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                color: "#E5E7F0",
-                fontWeight: 700,
-                letterSpacing: 0.5,
-              }}
-            >
-              FILTERS
+        {/* FILTER BAR (Dynamic Options applied) */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 16, marginBottom: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "#E5E7F0", fontWeight: 700, letterSpacing: 0.5 }}>
+              FILTERS (교차 필터링 적용)
             </div>
-
-            <button
-              onClick={
-                resetFilters
-              }
-              style={{
-                background:
-                  "transparent",
-                border:
-                  `1px solid ${BORDER}`,
-                color: TEXT_DIM,
-                borderRadius: 4,
-                padding:
-                  "5px 10px",
-                fontSize: 11,
-                cursor:
-                  "pointer",
-              }}
-            >
+            <button onClick={resetFilters} style={{ background: "transparent", border: `1px solid ${BORDER}`, color: TEXT_DIM, borderRadius: 4, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>
               Reset filters
             </button>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <FilterSelect
-              label="Year"
-              value={
-                selectedYear
-              }
-              options={
-                filterOptions.years
-              }
-              onChange={
-                setSelectedYear
-              }
-            />
-
-            <FilterSelect
-              label="Stage"
-              value={
-                selectedStage
-              }
-              options={
-                stageOptions
-              }
-              onChange={
-                setSelectedStage
-              }
-            />
-
-            <FilterSelect
-              label="Team"
-              value={
-                selectedTeam
-              }
-              options={
-                filterOptions.teams
-              }
-              onChange={
-                setSelectedTeam
-              }
-            />
-
-            <FilterSelect
-              label="Platform"
-              value={
-                selectedPlatform
-              }
-              options={
-                filterOptions.platforms
-              }
-              onChange={
-                setSelectedPlatform
-              }
-            />
-
-            <FilterSelect
-              label="Channel Type"
-              value={selectedChannelTypeFinal}
-              options={filterOptions.channelTypeFinals}
-              onChange={setSelectedChannelTypeFinal}
-            />
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              paddingTop: 11,
-              borderTop:
-                `1px solid ${BORDER}`,
-              fontSize: 11.5,
-              color: TEXT_DIM,
-            }}
-          >
-            Showing:
-            {" "}
-            <span
-              style={{
-                color:
-                  "#E5E7F0",
-              }}
-            >
-              {selectedYear ===
-              "All"
-                ? "All Years"
-                : selectedYear}
-            </span>
-            {" · "}
-            <span
-              style={{
-                color:
-                  "#E5E7F0",
-              }}
-            >
-              {selectedStage}
-            </span>
-            {" · "}
-            <span
-              style={{
-                color:
-                  "#E5E7F0",
-              }}
-            >
-              {selectedTeam}
-            </span>
-            {" · "}
-            <span
-              style={{
-                color:
-                  "#E5E7F0",
-              }}
-            >
-              {selectedPlatform}
-            </span>
-            {" · "}
-            <span
-              style={{
-                color:
-                  "#E5E7F0",
-              }}
-            >
-              Channel: {selectedChannelTypeFinal}
-            </span>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <FilterSelect label="Year" value={selectedYear} options={dynamicFilterOptions.years} onChange={setSelectedYear} />
+            <FilterSelect label="Stage" value={selectedStage} options={dynamicFilterOptions.stages} onChange={setSelectedStage} />
+            <FilterSelect label="Team" value={selectedTeam} options={dynamicFilterOptions.teams} onChange={setSelectedTeam} />
+            <FilterSelect label="Platform" value={selectedPlatform} options={dynamicFilterOptions.platforms} onChange={setSelectedPlatform} />
+            <FilterSelect label="Channel Type" value={selectedChannelTypeFinal} options={dynamicFilterOptions.channelTypeFinals} onChange={setSelectedChannelTypeFinal} />
           </div>
         </div>
 
-        {/* ==================================================
-            TEAM INSIGHT NOTE CARD (팀 선택 시 데이터 참고사항 출력)
-        ================================================== */}
+        {/* TEAM INSIGHT NOTE CARD */}
         {selectedTeam !== "All" && TEAM_NOTES[selectedTeam] && (
-          <div
-            style={{
-              background: PANEL,
-              border: `1px solid ${GOLD}`,
-              borderRadius: 8,
-              padding: "16px 20px",
-              marginBottom: 28,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 14,
-              boxShadow: "0 4px 20px rgba(212, 175, 55, 0.08)",
-            }}
-          >
-            <div
-              style={{
-                background: "rgba(212, 175, 55, 0.15)",
-                color: GOLD,
-                fontSize: 11,
-                fontWeight: 800,
-                padding: "4px 8px",
-                borderRadius: 4,
-                fontFamily: "ui-monospace, monospace",
-                whiteSpace: "nowrap",
-                letterSpacing: 1,
-              }}
-            >
+          <div style={{ background: PANEL, border: `1px solid ${GOLD}`, borderRadius: 8, padding: "16px 20px", marginBottom: 28, display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ background: "rgba(212, 175, 55, 0.15)", color: GOLD, fontSize: 11, fontWeight: 800, padding: "4px 8px", borderRadius: 4, fontFamily: "ui-monospace, monospace" }}>
               TEAM INSIGHT
             </div>
-
             <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: "#FAFAFC",
-                  marginBottom: 4,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                {selectedTeam}
-                <span style={{ fontSize: 12, color: TEXT_DIM, fontWeight: 400 }}>
-                  ({TEAM_NOTES[selectedTeam].nameKo}) 데이터 분석 노트
-                </span>
-
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#FAFAFC", marginBottom: 4 }}>
+                {selectedTeam} <span style={{ fontSize: 12, color: TEXT_DIM, fontWeight: 400 }}>({TEAM_NOTES[selectedTeam].nameKo}) 데이터 분석 노트</span>
               </div>
-
-              <div
-                style={{
-                  fontSize: 12.5,
-                  color: "#D0D5E2",
-                  lineHeight: 1.6,
-                }}
-              >
+              <div style={{ fontSize: 12.5, color: "#D0D5E2", lineHeight: 1.6 }}>
                 {TEAM_NOTES[selectedTeam].note}
               </div>
             </div>
           </div>
         )}
 
-        {/* ==================================================
-            TEAM SCOREBOARD
-        ================================================== */}
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            overflowX: "auto",
-            padding:
-              "0 0 22px",
-            borderBottom:
-              `1px solid ${BORDER}`,
-            marginBottom: 28,
-          }}
-        >
-          {TEAM_SUMMARY.map(
-            (t) => {
-              const active =
-                t.team ===
-                selectedTeam;
-
-              const gold =
-                isGenG(t.team);
-
-              return (
-                <button
-                  key={t.team}
-                  onClick={() =>
-                    setSelectedTeam(
-                      t.team
-                    )
-                  }
-                  style={{
-                    flex:
-                      "0 0 auto",
-                    cursor:
-                      "pointer",
-                    textAlign:
-                      "left",
-                    background:
-                      active
-                        ? gold
-                          ? "rgba(212,175,55,0.14)"
-                          : "rgba(255,255,255,0.06)"
-                        : "transparent",
-                    border:
-                      `1px solid ${
-                        active
-                          ? gold
-                            ? GOLD
-                            : "#4A4D63"
-                          : BORDER
-                      }`,
-                    borderRadius: 6,
-                    padding:
-                      "8px 12px",
-                    minWidth: 120,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: gold
-                        ? GOLD
-                        : TEXT_DIM,
-                      fontFamily:
-                        "ui-monospace, monospace",
-                    }}
-                  >
-                    #{t.rank}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: gold
-                        ? GOLD
-                        : "#E5E7F0",
-                      whiteSpace:
-                        "nowrap",
-                      marginTop: 2,
-                    }}
-                  >
-                    {t.team}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: TEXT_DIM,
-                      marginTop: 2,
-                      fontFamily:
-                        "ui-monospace, monospace",
-                    }}
-                  >
-                    {fmt(t.avg)}
-                  </div>
-                </button>
-              );
-            }
-          )}
-        </div>
-
-        {/* ==================================================
-            HERO / KPI
-        ================================================== */}
-        <div
-          style={{
-            display: "flex",
-            gap: 32,
-            flexWrap: "wrap",
-            marginBottom: 40,
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "24px 28px",
-          }}
-        >
-          <StatBlock
-            label={
-              selectedTeam ===
-              "All"
-                ? "전체 구단"
-                : `${selectedTeam} 순위`
-            }
-            value={
-              selectedTeam ===
-              "All"
-                ? "—"
-                : selectedTeamData.rank
-                ? `${selectedTeamData.rank} / ${TEAM_SUMMARY.length}`
-                : "-"
-            }
-            sub="현재 필터 기준"
-            accent={
-              isGenG(
-                selectedTeamData.team
-              )
-                ? GOLD
-                : "#F2F3F7"
-            }
-          />
-
-          <StatBlock
-            label="평균 동시시청자"
-            value={
-              selectedTeamData.avg >
-              0
-                ? fmt(
-                    selectedTeamData.avg
-                  )
-                : "-"
-            }
-            sub="현재 필터 기준"
-            accent={
-              isGenG(
-                selectedTeamData.team
-              )
-                ? GOLD
-                : "#F2F3F7"
-            }
-          />
-
-          <StatBlock
-            label="최고 동시시청자"
-            value={
-              selectedTeamData.peak >
-              0
-                ? fmt(
-                    selectedTeamData.peak
-                  )
-                : "-"
-            }
-            sub="현재 필터 기준"
-            accent={
-              isGenG(
-                selectedTeamData.team
-              )
-                ? GOLD
-                : "#F2F3F7"
-            }
-          />
-
-          <StatBlock
-            label="리그평균 대비"
-            value={
-              selectedTeam ===
-              "All"
-                ? "0.0%"
-                : selectedTeamData.rank
-                ? `${
-                    selectedTeamData.vsLeague >
-                    0
-                      ? "+"
-                      : ""
-                  }${selectedTeamData.vsLeague}%`
-                : "-"
-            }
-            sub={
-              selectedTeam ===
-              "All"
-                ? "전체 구단 평균 기준"
-                : "현재 필터 기준"
-            }
-            accent={
-              selectedTeam ===
-              "All"
-                ? GREEN
-                : selectedTeamData.vsLeague >=
-                  0
-                ? GREEN
-                : RED
-            }
-          />
-        </div>
-
-        {/* ==================================================
-            01 TEAM RANKING
-        ================================================== */}
-        <SectionLabel
-          index="01"
-          title="구단별 시청자 순위 (공식 풀네임)"
-        />
-
-        <p
-          style={{
-            color: TEXT_DIM,
-            fontSize: 12.5,
-            marginTop: -8,
-            marginBottom: 14,
-          }}
-        >
-          현재 선택한 필터 조건을 기준으로 구단별 평균 동시시청자를 비교합니다. (KIWOOM DRX 등 최신 공식 구단명 일괄 적용)
-        </p>
-
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "20px 20px 8px",
-            marginBottom: 40,
-          }}
-        >
-          {TEAM_SUMMARY.length >
-          0 ? (
-            <ResponsiveContainer
-              width="100%"
-              height={390}
-            >
-              <BarChart
-                data={
-                  TEAM_SUMMARY
-                }
-                layout="vertical"
-                margin={{
-                  top: 4,
-                  right: 45,
-                  left: 10,
-                  bottom: 4,
+        {/* TEAM SCOREBOARD */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 0 22px", borderBottom: `1px solid ${BORDER}`, marginBottom: 28 }}>
+          {TEAM_SUMMARY.map((t) => {
+            const active = t.team === selectedTeam;
+            const gold = isGenG(t.team);
+            return (
+              <button
+                key={t.team}
+                onClick={() => setSelectedTeam(t.team)}
+                style={{
+                  flex: "0 0 auto",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  background: active ? (gold ? "rgba(212,175,55,0.14)" : "rgba(255,255,255,0.06)") : "transparent",
+                  border: `1px solid ${active ? (gold ? GOLD : "#4A4D63") : BORDER}`,
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  minWidth: 120,
                 }}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={BORDER}
-                  horizontal={false}
-                />
+                <div style={{ fontSize: 10, color: gold ? GOLD : TEXT_DIM, fontFamily: "ui-monospace, monospace" }}>
+                  #{t.rank}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: gold ? GOLD : "#E5E7F0", whiteSpace: "nowrap", marginTop: 2 }}>
+                  {t.team}
+                </div>
+                <div style={{ fontSize: 11, color: TEXT_DIM, marginTop: 2, fontFamily: "ui-monospace, monospace" }}>
+                  {fmt(t.avg)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
-                <XAxis
-                  type="number"
-                  tick={{
-                    fill: TEXT_DIM,
-                    fontSize: 11,
-                  }}
-                  tickFormatter={(v) =>
-                    `${v / 1000}k`
-                  }
-                />
+        {/* HERO / KPI */}
+        <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginBottom: 40, background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "24px 28px" }}>
+          <StatBlock label={selectedTeam === "All" ? "전체 구단" : `${selectedTeam} 순위`} value={selectedTeam === "All" ? "—" : selectedTeamData.rank ? `${selectedTeamData.rank} / ${TEAM_SUMMARY.length}` : "-"} sub="현재 필터 기준" accent={isGenG(selectedTeamData.team) ? GOLD : "#F2F3F7"} />
+          <StatBlock label="평균 동시시청자" value={selectedTeamData.avg > 0 ? fmt(selectedTeamData.avg) : "-"} sub="현재 필터 기준" accent={isGenG(selectedTeamData.team) ? GOLD : "#F2F3F7"} />
+          <StatBlock label="최고 동시시청자" value={selectedTeamData.peak > 0 ? fmt(selectedTeamData.peak) : "-"} sub="현재 필터 기준" accent={isGenG(selectedTeamData.team) ? GOLD : "#F2F3F7"} />
+          <StatBlock label="리그평균 대비" value={selectedTeam === "All" ? "0.0%" : selectedTeamData.rank ? `${selectedTeamData.vsLeague > 0 ? "+" : ""}${selectedTeamData.vsLeague}%` : "-"} sub={selectedTeam === "All" ? "전체 구단 평균 기준" : "현재 필터 기준"} accent={selectedTeam === "All" ? GREEN : selectedTeamData.vsLeague >= 0 ? GREEN : RED} />
+        </div>
 
-                <YAxis
-                  type="category"
-                  dataKey="team"
-                  tick={{
-                    fill: "#E5E7F0",
-                    fontSize: 11.5,
-                  }}
-                  width={155}
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                  cursor={{
-                    fill:
-                      "rgba(255,255,255,0.03)",
-                  }}
-                />
-
-                <Bar
-                  dataKey="avg"
-                  name="평균 동시시청자"
-                  radius={[
-                    0,
-                    4,
-                    4,
-                    0,
-                  ]}
-                >
-                  {TEAM_SUMMARY.map(
-                    (d, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          isGenG(
-                            d.team
-                          )
-                            ? GOLD
-                            : SLATE
-                        }
-                      />
-                    )
-                  )}
-
-                  <LabelList
-                    dataKey="avg"
-                    position="right"
-                    formatter={fmt}
-                    style={{
-                      fill: TEXT_DIM,
-                      fontSize: 11,
-                    }}
-                  />
+        {/* 01 TEAM RANKING */}
+        <SectionLabel index="01" title="구단별 시청자 순위 (공식 풀네임)" />
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 20px 8px", marginBottom: 40 }}>
+          {TEAM_SUMMARY.length > 0 ? (
+            <ResponsiveContainer width="100%" height={390}>
+              <BarChart data={TEAM_SUMMARY} layout="vertical" margin={{ top: 4, right: 45, left: 10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={BORDER} horizontal={false} />
+                <XAxis type="number" tick={{ fill: TEXT_DIM, fontSize: 11 }} tickFormatter={(v) => `${v / 1000}k`} />
+                <YAxis type="category" dataKey="team" tick={{ fill: "#E5E7F0", fontSize: 11.5 }} width={155} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                <Bar dataKey="avg" name="평균 동시시청자" radius={[0, 4, 4, 0]}>
+                  {TEAM_SUMMARY.map((d, i) => (
+                    <Cell key={i} fill={isGenG(d.team) ? GOLD : SLATE} />
+                  ))}
+                  <LabelList dataKey="avg" position="right" formatter={fmt} style={{ fill: TEXT_DIM, fontSize: 11 }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div
-              style={{
-                height: 300,
-                display: "flex",
-                alignItems:
-                  "center",
-                justifyContent:
-                  "center",
-                color: TEXT_DIM,
-                fontSize: 13,
-              }}
-            >
-              선택한 조건에
-              해당하는 데이터가
-              없습니다.
+            <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
+              선택한 조건에 해당하는 데이터가 없습니다.
             </div>
           )}
         </div>
 
-        {/* ==================================================
-            02 HALF-YEAR (1H) COMPARISON
-        ================================================== */}
-        <SectionLabel
-          index="02"
-          title="상반기 동일기간 비교 (2025 상반기 vs 2026 상반기)"
-        />
-
-        <p
-          style={{
-            color: TEXT_DIM,
-            fontSize: 13.5,
-            lineHeight: 1.7,
-            marginTop: -8,
-            marginBottom: 18,
-          }}
-        >
-          2025년 상반기와 2026년 상반기의{" "}
-          <strong
-            style={{
-              color: "#E5E7F0",
-            }}
-          >
-            평균 동시시청자
-          </strong>
-          를 비교합니다.
-          {" "}
-          {selectedTeam === "All" ? (
-            <>
-              전체 구단 기준 2025년 상반기 평균은{" "}
-              <strong
-                style={{
-                  color: GOLD,
-                }}
-              >
-                {selectedHalfYear.y2025
-                  ? fmt(selectedHalfYear.y2025)
-                  : "-"}
-              </strong>
-              , 2026년 상반기 평균은{" "}
-              <strong
-                style={{
-                  color: GOLD,
-                }}
-              >
-                {selectedHalfYear.y2026
-                  ? fmt(selectedHalfYear.y2026)
-                  : "-"}
-              </strong>
-              입니다.
-            </>
-          ) : (
-            <>
-              {selectedTeam}의 경우 2025년 상반기{" "}
-              <strong
-                style={{
-                  color: GOLD,
-                }}
-              >
-                {selectedHalfYearRank.y2025
-                  ? `${selectedHalfYearRank.y2025}위`
-                  : "-"}
-              </strong>
-              , 2026년 상반기{" "}
-              <strong
-                style={{
-                  color: GOLD,
-                }}
-              >
-                {selectedHalfYearRank.y2026
-                  ? `${selectedHalfYearRank.y2026}위`
-                  : "-"}
-              </strong>
-              입니다.
-            </>
-          )}
-        </p>
-
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "20px 20px 8px",
-            marginBottom: 40,
-          }}
-        >
-          <ResponsiveContainer
-            width="100%"
-            height={340}
-          >
-            <BarChart
-              data={
-                HALF_YEAR_COMPARE
-              }
-              margin={{
-                top: 4,
-                right: 12,
-                left: -10,
-                bottom: 4,
-              }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={BORDER}
-                vertical={false}
-              />
-
-              <XAxis
-                dataKey="team"
-                tick={{
-                  fill: TEXT_DIM,
-                  fontSize: 10.5,
-                }}
-                interval={0}
-                angle={-20}
-                textAnchor="end"
-                height={75}
-              />
-
-              <YAxis
-                tick={{
-                  fill: TEXT_DIM,
-                  fontSize: 11,
-                }}
-                tickFormatter={(v) =>
-                  `${v / 1000}k`
-                }
-              />
-
-              <Tooltip
-                content={
-                  <CustomTooltip />
-                }
-                cursor={{
-                  fill:
-                    "rgba(255,255,255,0.03)",
-                }}
-              />
-
-              <Legend
-                wrapperStyle={{
-                  fontSize: 12,
-                  color: TEXT_DIM,
-                }}
-              />
-
-              <Bar
-                dataKey="y2025"
-                name="2025 상반기"
-                radius={[
-                  3,
-                  3,
-                  0,
-                  0,
-                ]}
-              >
-                {HALF_YEAR_COMPARE.map(
-                  (d, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        isGenG(
-                          d.team
-                        )
-                          ? "#8A7326"
-                          : "#3A3D52"
-                      }
-                    />
-                  )
-                )}
+        {/* 02 HALF-YEAR (1H) COMPARISON */}
+        <SectionLabel index="02" title="상반기 동일기간 비교 (2025 상반기 vs 2026 상반기)" />
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 20px 8px", marginBottom: 40 }}>
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={HALF_YEAR_COMPARE} margin={{ top: 4, right: 12, left: -10, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
+              <XAxis dataKey="team" tick={{ fill: TEXT_DIM, fontSize: 10.5 }} interval={0} angle={-20} textAnchor="end" height={75} />
+              <YAxis tick={{ fill: TEXT_DIM, fontSize: 11 }} tickFormatter={(v) => `${v / 1000}k`} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+              <Legend wrapperStyle={{ fontSize: 12, color: TEXT_DIM }} />
+              <Bar dataKey="y2025" name="2025 상반기" radius={[3, 3, 0, 0]}>
+                {HALF_YEAR_COMPARE.map((d, i) => (
+                  <Cell key={i} fill={isGenG(d.team) ? "#8A7326" : "#3A3D52"} />
+                ))}
               </Bar>
-
-              <Bar
-                dataKey="y2026"
-                name="2026 상반기"
-                radius={[
-                  3,
-                  3,
-                  0,
-                  0,
-                ]}
-              >
-                {HALF_YEAR_COMPARE.map(
-                  (d, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        isGenG(
-                          d.team
-                        )
-                          ? GOLD
-                          : SLATE_LIGHT
-                      }
-                    />
-                  )
-                )}
+              <Bar dataKey="y2026" name="2026 상반기" radius={[3, 3, 0, 0]}>
+                {HALF_YEAR_COMPARE.map((d, i) => (
+                  <Cell key={i} fill={isGenG(d.team) ? GOLD : SLATE_LIGHT} />
+                ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* ==================================================
-            03 TREND
-        ================================================== */}
-        <SectionLabel
-          index="03"
-          title="연도별 상반기 전체 시청자 트렌드"
-        />
-
-        <p
-          style={{
-            color: TEXT_DIM,
-            fontSize: 12.5,
-            marginTop: -8,
-            marginBottom: 14,
-          }}
-        >
-          2025년 상반기와 2026년 상반기의 <strong style={{ color: "#E5E7F0" }}>전체 경기 평균 시청자</strong> 추이를 비교합니다.
-        </p>
-
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "20px 20px 8px",
-            marginBottom: 40,
-          }}
-        >
-          {YEARLY_TREND.length >
-          0 ? (
-            <ResponsiveContainer
-              width="100%"
-              height={240}
-            >
-              <LineChart
-                data={
-                  YEARLY_TREND
-                }
-                margin={{
-                  top: 10,
-                  right: 20,
-                  left: 0,
-                  bottom: 4,
-                }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={BORDER}
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="year"
-                  tick={{
-                    fill: TEXT_DIM,
-                    fontSize: 12,
-                  }}
-                />
-
-                <YAxis
-                  tick={{ fill: TEXT_DIM, fontSize: 11 }}
-                  tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`}
-                  width={50}
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                />
-
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="상반기 평균 동시시청자"
-                  stroke={RED}
-                  strokeWidth={2.5}
-                  dot={{
-                    r: 4,
-                    fill: RED,
-                  }}
-                />
+        {/* 03 TREND */}
+        <SectionLabel index="03" title="연도별 상반기 전체 시청자 트렌드" />
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 20px 8px", marginBottom: 40 }}>
+          {YEARLY_TREND.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={YEARLY_TREND} margin={{ top: 10, right: 20, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
+                <XAxis dataKey="year" tick={{ fill: TEXT_DIM, fontSize: 12 }} />
+                <YAxis tick={{ fill: TEXT_DIM, fontSize: 11 }} tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} width={50} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="value" name="상반기 평균 동시시청자" stroke={RED} strokeWidth={2.5} dot={{ r: 4, fill: RED }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div
-              style={{
-                height: 200,
-                display: "flex",
-                alignItems:
-                  "center",
-                justifyContent:
-                  "center",
-                color: TEXT_DIM,
-                fontSize: 13,
-              }}
-            >
-              선택한 조건에
-              해당하는 데이터가
-              없습니다.
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
+              선택한 조건에 해당하는 데이터가 없습니다.
             </div>
           )}
         </div>
 
-        {/* ==================================================
-            04 STAGE
-        ================================================== */}
-        <SectionLabel
-          index="04"
-          title={`대회 유형별 시청자 — ${stageRow.team}`}
-        />
-
-        <p
-          style={{
-            color: TEXT_DIM,
-            fontSize: 12.5,
-            marginTop: -8,
-            marginBottom: 14,
-          }}
-        >
-          Year와 Platform 필터를 적용한{" "}
-          {selectedTeam === "All" ? "전체 구단의" : "선택 구단의"}{" "}
-          대회 단계별 평균 동시시청자입니다. (2026 Split 2 정규시즌 및 Road to MSI 포함)
-        </p>
-
-        <div
-          style={{
-            background: PANEL,
-            border:
-              `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding:
-              "20px 20px 8px",
-            marginBottom: 40,
-          }}
-        >
-          {stageChartData.length >
-          0 ? (
-            <ResponsiveContainer
-              width="100%"
-              height={320}
-            >
-              <BarChart
-                data={
-                  stageChartData
-                }
-                margin={{
-                  top: 4,
-                  right: 12,
-                  left: -10,
-                  bottom: 4,
-                }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={BORDER}
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="stage"
-                  tick={{
-                    fill: TEXT_DIM,
-                    fontSize: 10.5,
-                  }}
-                  interval={0}
-                  angle={-15}
-                  textAnchor="end"
-                  height={65}
-                />
-
-                <YAxis
-                  tick={{
-                    fill: TEXT_DIM,
-                    fontSize: 11,
-                  }}
-                  tickFormatter={(v) =>
-                    `${v / 1000}k`
-                  }
-                />
-
-                <Tooltip
-                  content={
-                    <CustomTooltip />
-                  }
-                  cursor={{
-                    fill:
-                      "rgba(255,255,255,0.03)",
-                  }}
-                />
-
-                <Bar
-                  dataKey="value"
-                  name="평균 동시시청자"
-                  radius={[
-                    3,
-                    3,
-                    0,
-                    0,
-                  ]}
-                  fill={
-                    selectedTeam ===
-                    "All"
-                      ? SLATE_LIGHT
-                      : isGenG(
-                          stageRow.team
-                        )
-                      ? GOLD
-                      : SLATE_LIGHT
-                  }
-                />
+        {/* 04 STAGE */}
+        <SectionLabel index="04" title={`대회 유형별 시청자 — ${stageRow.team}`} />
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 20px 8px", marginBottom: 40 }}>
+          {stageChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={stageChartData} margin={{ top: 4, right: 12, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
+                <XAxis dataKey="stage" tick={{ fill: TEXT_DIM, fontSize: 10.5 }} interval={0} angle={-15} textAnchor="end" height={65} />
+                <YAxis tick={{ fill: TEXT_DIM, fontSize: 11 }} tickFormatter={(v) => `${v / 1000}k`} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                <Bar dataKey="value" name="평균 동시시청자" radius={[3, 3, 0, 0]} fill={isGenG(stageRow.team) ? GOLD : SLATE_LIGHT} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div
-              style={{
-                height: 240,
-                display: "flex",
-                alignItems:
-                  "center",
-                justifyContent:
-                  "center",
-                color: TEXT_DIM,
-                fontSize: 13,
-              }}
-            >
-              선택한 조건에
-              해당하는 데이터가
-              없습니다.
+            <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
+              선택한 조건에 해당하는 데이터가 없습니다.
             </div>
           )}
         </div>
 
-        {/* ==================================================
-            05 + 06
-        ================================================== */}
-        <div
-          style={{
-            display: "flex",
-            gap: 24,
-            flexWrap: "wrap",
-          }}
-        >
+        {/* 05 + 06 */}
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {/* TOP 5 */}
-          <div
-            style={{
-              flex:
-                "1 1 460px",
-            }}
-          >
-            <SectionLabel
-              index="05"
-              title={`${stageRow.team} 최고 흥행 경기 TOP 5`}
-            />
-
-            <div
-              style={{
-                background: PANEL,
-                border:
-                  `1px solid ${BORDER}`,
-                borderRadius: 8,
-                overflow:
-                  "hidden",
-              }}
-            >
-              {TOP5.length >
-              0 ? (
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse:
-                      "collapse",
-                    fontSize: 12.5,
-                  }}
-                >
+          <div style={{ flex: "1 1 460px" }}>
+            <SectionLabel index="05" title={`${stageRow.team} 최고 흥행 경기 TOP 5`} />
+            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
+              {TOP5.length > 0 ? (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                   <thead>
-                    <tr
-                      style={{
-                        borderBottom:
-                          `1px solid ${BORDER}`,
-                      }}
-                    >
-                      {[
-                        "날짜",
-                        "단계",
-                        "최고 시청자",
-                        "평균 시청자",
-                      ].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            style={{
-                              textAlign:
-                                "left",
-                              padding:
-                                "10px 14px",
-                              color:
-                                TEXT_DIM,
-                              fontWeight:
-                                500,
-                            }}
-                          >
-                            {h}
-                          </th>
-                        )
-                      )}
+                    <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      {["날짜", "단계", "최고 시청자", "평균 시청자"].map((h) => (
+                        <th key={h} style={{ textAlign: "left", padding: "10px 14px", color: TEXT_DIM, fontWeight: 500 }}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-
                   <tbody>
-                    {TOP5.map(
-                      (m, i) => (
-                        <tr
-                          key={i}
-                          style={{
-                            borderBottom:
-                              i <
-                              TOP5.length -
-                                1
-                                ? `1px solid ${BORDER}`
-                                : "none",
-                          }}
-                        >
-                          <td
-                            style={{
-                              padding:
-                                "10px 14px",
-                              color:
-                                "#E5E7F0",
-                            }}
-                          >
-                            {m.date
-                              ? String(m.date).slice(0, 10)
-                              : "-"}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "10px 14px",
-                              color:
-                                TEXT_DIM,
-                            }}
-                          >
-                            {m.tag}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "10px 14px",
-                              color:
-                                GOLD,
-                              fontFamily:
-                                "ui-monospace, monospace",
-                            }}
-                          >
-                            {fmt(
-                              m.peak
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "10px 14px",
-                              color:
-                                TEXT_DIM,
-                              fontFamily:
-                                "ui-monospace, monospace",
-                            }}
-                          >
-                            {fmt(
-                              m.avg
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    )}
+                    {TOP5.map((m, i) => (
+                      <tr key={i} style={{ borderBottom: i < TOP5.length - 1 ? `1px solid ${BORDER}` : "none" }}>
+                        <td style={{ padding: "10px 14px", color: "#E5E7F0" }}>{m.date ? String(m.date).slice(0, 10) : "-"}</td>
+                        <td style={{ padding: "10px 14px", color: TEXT_DIM }}>{m.tag}</td>
+                        <td style={{ padding: "10px 14px", color: GOLD, fontFamily: "ui-monospace, monospace" }}>{fmt(m.peak)}</td>
+                        <td style={{ padding: "10px 14px", color: TEXT_DIM, fontFamily: "ui-monospace, monospace" }}>{fmt(m.avg)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               ) : (
-                <div
-                  style={{
-                    padding: 40,
-                    textAlign:
-                      "center",
-                    color:
-                      TEXT_DIM,
-                    fontSize: 13,
-                  }}
-                >
-                  선택한 조건에
-                  해당하는 데이터가
-                  없습니다.
+                <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM, fontSize: 13 }}>
+                  선택한 조건에 해당하는 데이터가 없습니다.
                 </div>
               )}
-            </div>
-
-            <div
-              style={{
-                fontSize: 11.5,
-                color: TEXT_DIM,
-                marginTop: 8,
-              }}
-            >
-              현재 선택된 필터 조건에서 경기별
-              최고 동시시청자를 기준으로 정렬합니다.
             </div>
           </div>
 
           {/* PLATFORM */}
-          <div
-            style={{
-              flex:
-                "1 1 420px",
-            }}
-          >
-            <SectionLabel
-              index="06"
-              title={`${stageRow.team} 플랫폼별 성과`}
-            />
-
-            <div
-              style={{
-                background: PANEL,
-                border:
-                  `1px solid ${BORDER}`,
-                borderRadius: 8,
-                padding:
-                  "20px 20px 8px",
-              }}
-            >
-              {PLATFORM_DATA.length >
-              0 ? (
-                <ResponsiveContainer
-                  width="100%"
-                  height={240}
-                >
-                  <BarChart
-                    data={
-                      PLATFORM_DATA
-                    }
-                    layout="vertical"
-                    margin={{
-                      top: 4,
-                      right: 30,
-                      left: 10,
-                      bottom: 4,
-                    }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={BORDER}
-                      horizontal={false}
-                    />
-
-                    <XAxis
-                      type="number"
-                      tick={{
-                        fill: TEXT_DIM,
-                        fontSize: 10.5,
-                      }}
-                      tickFormatter={(v) =>
-                        `${v / 1000}k`
-                      }
-                    />
-
-                    <YAxis
-                      type="category"
-                      dataKey="platform"
-                      tick={{
-                        fill:
-                          "#E5E7F0",
-                        fontSize: 11.5,
-                      }}
-                      width={70}
-                    />
-
-                    <Tooltip
-                      content={
-                        <CustomTooltip />
-                      }
-                      cursor={{
-                        fill:
-                          "rgba(255,255,255,0.03)",
-                      }}
-                    />
-
-                    <Bar
-                      dataKey="avg"
-                      name="평균 동시시청자"
-                      radius={[
-                        0,
-                        4,
-                        4,
-                        0,
-                      ]}
-                      fill={
-                        selectedTeam ===
-                        "All"
-                          ? SLATE_LIGHT
-                          : GOLD
-                      }
-                    />
+          <div style={{ flex: "1 1 420px" }}>
+            <SectionLabel index="06" title={`${stageRow.team} 플랫폼별 성과`} />
+            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 20px 8px" }}>
+              {PLATFORM_DATA.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={PLATFORM_DATA} layout="vertical" margin={{ top: 4, right: 30, left: 10, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={BORDER} horizontal={false} />
+                    <XAxis type="number" tick={{ fill: TEXT_DIM, fontSize: 10.5 }} tickFormatter={(v) => `${v / 1000}k`} />
+                    <YAxis type="category" dataKey="platform" tick={{ fill: "#E5E7F0", fontSize: 11.5 }} width={70} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                    <Bar dataKey="avg" name="평균 동시시청자" radius={[0, 4, 4, 0]} fill={selectedTeam === "All" ? SLATE_LIGHT : GOLD} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div
-                  style={{
-                    height: 200,
-                    display:
-                      "flex",
-                    alignItems:
-                      "center",
-                    justifyContent:
-                      "center",
-                    color:
-                      TEXT_DIM,
-                    fontSize: 13,
-                  }}
-                >
-                  선택한 조건에
-                  해당하는 데이터가
-                  없습니다.
+                <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT_DIM, fontSize: 13 }}>
+                  선택한 조건에 해당하는 데이터가 없습니다.
                 </div>
               )}
-            </div>
-
-            <div
-              style={{
-                fontSize: 11.5,
-                color: TEXT_DIM,
-                marginTop: 8,
-              }}
-            >
-              현재 선택된 필터 조건에서 플랫폼별 평균 동시시청자를 비교합니다.
             </div>
           </div>
         </div>
 
-        {/* ==================================================
-            FOOTNOTE
-        ================================================== */}
-        <div
-          style={{
-            marginTop: 48,
-            paddingTop: 16,
-            borderTop:
-              `1px solid ${BORDER}`,
-            fontSize: 11.5,
-            color: TEXT_DIM,
-            lineHeight: 1.8,
-          }}
-        >
-          2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준 (2026 First Stand는 분석 제외)
+        {/* FOOTNOTE */}
+        <div style={{ marginTop: 48, paddingTop: 16, borderTop: `1px solid ${BORDER}`, fontSize: 11.5, color: TEXT_DIM, lineHeight: 1.8 }}>
+          2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
           <br />
-          모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산됩니다.
+          모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산되며, 교차 필터링이 적용됩니다.
         </div>
       </div>
     </div>
