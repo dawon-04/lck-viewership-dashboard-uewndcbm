@@ -2262,4 +2262,3 @@ export default function GenGDashboard() {
     </div>
   );
 }
-```
