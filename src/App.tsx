@@ -1300,7 +1300,7 @@ export default function GenGDashboard() {
                 letterSpacing: 0.5,
               }}
             >
-              FILTERS (완전 교차 종속 필터링 적용)
+              FILTERS
             </div>
 
             <button
@@ -2256,7 +2256,7 @@ export default function GenGDashboard() {
         >
           2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
           <br />
-          모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산되며, 교차 종속 필터링이 적용됩니다.
+          모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산됩니다.
         </div>
       </div>
     </div>
