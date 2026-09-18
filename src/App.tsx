@@ -105,11 +105,11 @@ const TEAM_NOTES = {
   },
   "BNK FEARX": {
     nameKo: "BNK 피어엑스",
-    note: "Team BattleComics → SANDBOX Gaming(2018) → Liiv SANDBOX(2020) → FearX(2024) → BNK FearX(2024) 순으로 리브랜딩.",
+    note: "Team BattleComics → SANDBOX Gaming(2018) → Liiv SANDBOX(2020, KB국민은행) → FearX(2024) → BNK FearX(2024) 순으로 리브랜딩.",
   },
   "KIWOOM DRX": {
     nameKo: "키움 DRX",
-    note: "Incredible Miracle(2012) → Longzhu Gaming → Kingzone DragonX(2018) → DragonX(2019) → DRX(2020) → 2026년 키움증권 스폰서십.",
+    note: "Incredible Miracle(2012) → Longzhu Gaming → Kingzone DragonX(2018) → DragonX(2019) → DRX(2020) → 2026년 키움증권 스폰서십. 2022 롤드컵 우승.",
   },
   "HANJIN BRION": {
     nameKo: "한진 브리온",
@@ -237,7 +237,7 @@ function FilterSelect({ label, value, options, onChange }) {
 }
 
 // ============================================================
-// Main
+// Main Component
 // ============================================================
 export default function GenGDashboard() {
   const [data, setData] = useState<DashboardRow[]>([]);
@@ -280,7 +280,7 @@ export default function GenGDashboard() {
   const matchesStage = (row, stage) => stage === "All" || String(row.Stage || "").trim() === stage;
   const matchesChannelTypeFinal = (row) => selectedChannelTypeFinal === "All" || getChannelTypeFinalVal(row) === selectedChannelTypeFinal;
 
-  // 메인 필터 적용 결과 (모든 KPI / 차트의 기준)
+  // 메인 데이터 필터링 (KPI, 차트용)
   const filteredData = useMemo(() => {
     return data.filter((r) => {
       const yearMatch = selectedYear === "All" || String(r.Year || "").trim() === selectedYear;
@@ -293,31 +293,31 @@ export default function GenGDashboard() {
   }, [data, selectedYear, selectedStage, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
 
   // ==========================================================
-  // 교차 종속 드롭다운 옵션 계산 (나를 제외한 나머지 조건 교차 검증)
+  // 완전 교차 종속(Cascading) 동적 옵션 계산
   // ==========================================================
   const dynamicFilterOptions = useMemo(() => {
-    const matchRowByOthers = (row: DashboardRow, ignore: string) => {
+    const matchRowByOthers = (row: DashboardRow, targetKey: string) => {
       const y = String(row.Year || "").trim();
       const s = String(row.Stage || "").trim();
       const t = String(row.Team_Full || "").trim();
       const p = String(row.Platform || "").trim();
       const c = getChannelTypeFinalVal(row);
 
-      if (ignore !== "year" && selectedYear !== "All" && y !== selectedYear) return false;
-      if (ignore !== "stage" && selectedStage !== "All" && s !== selectedStage) return false;
-      if (ignore !== "team" && selectedTeam !== "All" && t !== selectedTeam) return false;
-      if (ignore !== "platform" && selectedPlatform !== "All" && p !== selectedPlatform) return false;
-      if (ignore !== "channel" && selectedChannelTypeFinal !== "All" && c !== selectedChannelTypeFinal) return false;
+      if (targetKey !== "year" && selectedYear !== "All" && y !== selectedYear) return false;
+      if (targetKey !== "stage" && selectedStage !== "All" && s !== selectedStage) return false;
+      if (targetKey !== "team" && selectedTeam !== "All" && t !== selectedTeam) return false;
+      if (targetKey !== "platform" && selectedPlatform !== "All" && p !== selectedPlatform) return false;
+      if (targetKey !== "channel" && selectedChannelTypeFinal !== "All" && c !== selectedChannelTypeFinal) return false;
       return true;
     };
 
-    const extractUnique = (key: string, getter: (r: DashboardRow) => string) => {
-      const subset = data.filter((r) => matchRowByOthers(r, key));
+    const extractUnique = (targetKey: string, getter: (r: DashboardRow) => string) => {
+      const subset = data.filter((r) => matchRowByOthers(r, targetKey));
       return Array.from(new Set(subset.map(getter).filter((v) => v !== ""))).sort();
     };
 
     const years = ["All", ...extractUnique("year", (r) => String(r.Year || "").trim())];
-    
+
     const stageSubset = data.filter((r) => matchRowByOthers(r, "stage"));
     const rawStages = Array.from(new Set(stageSubset.map((r) => String(r.Stage || "").trim()).filter(Boolean)));
     const orderedStages = STAGE_ORDER.filter((s) => rawStages.includes(s));
@@ -331,7 +331,7 @@ export default function GenGDashboard() {
     return { years, stages, teams, platforms, channelTypeFinals: channels };
   }, [data, selectedYear, selectedStage, selectedTeam, selectedPlatform, selectedChannelTypeFinal]);
 
-  // 유효성 벗어난 선택값 자동 초기화
+  // 유효하지 않은 선택값 자동 보정 (유효 리스트에 없으면 "All"로 리셋)
   useEffect(() => {
     if (selectedYear !== "All" && !dynamicFilterOptions.years.includes(selectedYear)) setSelectedYear("All");
     if (selectedStage !== "All" && !dynamicFilterOptions.stages.includes(selectedStage)) setSelectedStage("All");
@@ -499,7 +499,7 @@ export default function GenGDashboard() {
             </h1>
           </div>
           <div style={{ fontSize: 11.5, color: TEXT_DIM, textAlign: "right", lineHeight: 1.6 }}>
-            Interactive Dashboard (Dynamic Filtering Active)
+            Interactive Dashboard (Dynamic Cascading Active)
             <br />
             2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
           </div>
@@ -509,7 +509,7 @@ export default function GenGDashboard() {
         <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 16, marginBottom: 22 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 12, color: "#E5E7F0", fontWeight: 700, letterSpacing: 0.5 }}>
-              FILTERS (동적 교차 필터링 적용)
+              FILTERS (완전 교차 종속 필터링 적용)
             </div>
             <button onClick={resetFilters} style={{ background: "transparent", border: `1px solid ${BORDER}`, color: TEXT_DIM, borderRadius: 4, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>
               Reset filters
