@@ -1464,6 +1464,58 @@ export default function GenGDashboard() {
               onChange={setSelectedLocalGlobal}
             />
           </div>
+
+          {/* CHANNEL TYPE 설명 캡션 */}
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 11,
+              borderTop: `1px solid ${BORDER}`,
+              fontSize: 11.5,
+              color: TEXT_DIM,
+              lineHeight: 1.6,
+            }}
+          >
+            {selectedChannelTypeFinal === "Official-Limit" && (
+              <>
+                <strong style={{ color: "#E5E7F0" }}>
+                  Official-Limit
+                </strong>
+                : 공식 중계 채널 중에서도 YouTube·Twitch·SOOP·Naver·TikTok·Huya TV
+                6개 플랫폼의 공식 채널만 집계 (개인 방송, Facebook·CATV·MBC 등 소규모
+                플랫폼 제외). 기본값으로 선택되어 있습니다.
+              </>
+            )}
+
+            {selectedChannelTypeFinal === "Official" && (
+              <>
+                <strong style={{ color: "#E5E7F0" }}>
+                  Official
+                </strong>
+                : 플랫폼 제한 없이 공식 중계 채널 전체 집계 (Facebook·CATV·MBC 등
+                소규모 플랫폼 포함).
+              </>
+            )}
+
+            {selectedChannelTypeFinal === "Costream" && (
+              <>
+                <strong style={{ color: "#E5E7F0" }}>
+                  Costream
+                </strong>
+                : 개인/팬 스트리머 등 비공식 동시중계 채널만 집계.
+              </>
+            )}
+
+            {selectedChannelTypeFinal === "All" && (
+              <>
+                <strong style={{ color: "#E5E7F0" }}>
+                  All
+                </strong>
+                : 공식·비공식 구분 없이 전체 채널 데이터를 집계 (마이너 개인 채널
+                포함으로 평균이 낮게 나올 수 있음).
+              </>
+            )}
+          </div>
         </div>
 
         {/* TEAM INSIGHT NOTE CARD */}
