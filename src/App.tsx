@@ -65,6 +65,16 @@ const isGenG = (team) => team === "Gen.G";
 
 const cleanValue = (value) => String(value || "").trim();
 
+// Official-Limit에 포함할 공식 플랫폼
+const allowed_platforms = [
+  "YouTube",
+  "Twitch",
+  "SOOP",
+  "Naver",
+  "TikTok",
+  "Huya TV",
+];
+
 // ============================================================
 // 공식 Stage 순서
 // ============================================================
@@ -371,7 +381,7 @@ export default function GenGDashboard() {
   const [selectedTeam, setSelectedTeam] = useState("Gen.G");
   const [selectedPlatform, setSelectedPlatform] = useState("All");
   const [selectedChannelTypeFinal, setSelectedChannelTypeFinal] =
-    useState("All");
+    useState("Official-Limit");
   const [selectedLocalGlobal, setSelectedLocalGlobal] =
     useState("All");
 
@@ -432,9 +442,21 @@ export default function GenGDashboard() {
     stage === "All" ||
     cleanValue(row.Stage) === stage;
 
-  const matchesChannelTypeFinal = (row) =>
-    selectedChannelTypeFinal === "All" ||
-    getChannelTypeFinalVal(row) === selectedChannelTypeFinal;
+  const matchesChannelTypeFinal = (row, selected = selectedChannelTypeFinal) => {
+    const channelType = getChannelTypeFinalVal(row);
+    const platform = cleanValue(row.Platform);
+
+    if (selected === "All") return true;
+
+    if (selected === "Official-Limit") {
+      return (
+        channelType === "Official" &&
+        allowed_platforms.includes(platform)
+      );
+    }
+
+    return channelType === selected;
+  };
 
   // ==========================================================
   // 메인 데이터 필터링
@@ -458,8 +480,7 @@ export default function GenGDashboard() {
         cleanValue(r.Platform) === selectedPlatform;
 
       const channelTypeFinalMatch =
-        selectedChannelTypeFinal === "All" ||
-        getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
       const localGlobalMatch =
         selectedLocalGlobal === "All" ||
@@ -560,8 +581,7 @@ export default function GenGDashboard() {
       // Channel Type 조건
       if (
         excludedFilter !== "channel" &&
-        selectedChannelTypeFinal !== "All" &&
-        channel !== selectedChannelTypeFinal
+        !matchesChannelTypeFinal(row)
       ) {
         return false;
       }
@@ -668,9 +688,16 @@ export default function GenGDashboard() {
       (r) => getChannelTypeFinalVal(r)
     );
 
+    const sortedRawChannels = rawChannels.sort((a, b) =>
+      a.localeCompare(b)
+    );
+
+    // Official-Limit은 실제 시트의 Channel_Type_Final 값이 아니라
+    // 대시보드에서 계산하는 가상 필터이므로 항상 노출한다.
     const channelTypeFinals = [
       "All",
-      ...rawChannels.sort((a, b) => a.localeCompare(b)),
+      "Official-Limit",
+      ...sortedRawChannels,
     ];
 
     // --------------------------------------------------------
@@ -749,7 +776,7 @@ export default function GenGDashboard() {
         selectedChannelTypeFinal
       )
     ) {
-      setSelectedChannelTypeFinal("All");
+      setSelectedChannelTypeFinal("Official-Limit");
     }
 
     if (
@@ -770,7 +797,7 @@ export default function GenGDashboard() {
     setSelectedStage("All");
     setSelectedTeam("All");
     setSelectedPlatform("All");
-    setSelectedChannelTypeFinal("All");
+    setSelectedChannelTypeFinal("Official-Limit");
     setSelectedLocalGlobal("All");
   };
 
@@ -792,8 +819,7 @@ export default function GenGDashboard() {
         cleanValue(r.Platform) === selectedPlatform;
 
       const channelTypeFinalMatch =
-        selectedChannelTypeFinal === "All" ||
-        getChannelTypeFinalVal(r) === selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
       const localGlobalMatch =
         selectedLocalGlobal === "All" ||
@@ -876,9 +902,7 @@ export default function GenGDashboard() {
           cleanValue(r.Platform) === selectedPlatform;
 
         const channelTypeFinalMatch =
-          selectedChannelTypeFinal === "All" ||
-          getChannelTypeFinalVal(r) ===
-            selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
         const localGlobalMatch =
           selectedLocalGlobal === "All" ||
@@ -983,9 +1007,7 @@ export default function GenGDashboard() {
         cleanValue(r.Platform) === selectedPlatform;
 
       const channelTypeFinalMatch =
-        selectedChannelTypeFinal === "All" ||
-        getChannelTypeFinalVal(r) ===
-          selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
       const localGlobalMatch =
         selectedLocalGlobal === "All" ||
@@ -1074,9 +1096,7 @@ export default function GenGDashboard() {
               cleanValue(r.Platform) === selectedPlatform;
 
             const channelTypeFinalMatch =
-              selectedChannelTypeFinal === "All" ||
-              getChannelTypeFinalVal(r) ===
-                selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
             const localGlobalMatch =
               selectedLocalGlobal === "All" ||
@@ -1182,9 +1202,7 @@ export default function GenGDashboard() {
         cleanValue(r.Stage) === selectedStage;
 
       const channelTypeFinalMatch =
-        selectedChannelTypeFinal === "All" ||
-        getChannelTypeFinalVal(r) ===
-          selectedChannelTypeFinal;
+        matchesChannelTypeFinal(r);
 
       const localGlobalMatch =
         selectedLocalGlobal === "All" ||
