@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -365,6 +365,141 @@ function FilterSelect({ label, value, options, onChange }) {
   );
 }
 
+function MultiSelect({ label, values, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const opts = options.filter((o) => o !== "All");
+  const summary =
+    values.length === 0
+      ? "All"
+      : values.length <= 2
+      ? values.join(", ")
+      : `${values.length}개 선택`;
+
+  const toggle = (o) =>
+    onChange(
+      values.includes(o) ? values.filter((v) => v !== o) : [...values, o]
+    );
+
+  return (
+    <div
+      ref={ref}
+      style={{ minWidth: 140, flex: "1 1 140px", position: "relative" }}
+    >
+      <div
+        style={{
+          fontSize: 10.5,
+          color: TEXT_DIM,
+          marginBottom: 6,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          fontFamily: "ui-monospace, monospace",
+        }}
+      >
+        {label}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%",
+          background: "#10111A",
+          color: "#E5E7F0",
+          border: `1px solid ${values.length ? GOLD : BORDER}`,
+          borderRadius: 5,
+          padding: "9px 10px",
+          fontSize: 12.5,
+          cursor: "pointer",
+          textAlign: "left",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 6,
+        }}
+      >
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {summary}
+        </span>
+        <span style={{ color: TEXT_DIM }}>▾</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            zIndex: 20,
+            background: "#10111A",
+            border: `1px solid ${BORDER}`,
+            borderRadius: 5,
+            maxHeight: 260,
+            overflowY: "auto",
+            padding: 6,
+            minWidth: 180,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              background: "transparent",
+              border: "none",
+              color: values.length === 0 ? GOLD : TEXT_DIM,
+              fontSize: 12,
+              padding: "6px 8px",
+              cursor: "pointer",
+            }}
+          >
+            All (선택 해제)
+          </button>
+
+          {opts.map((o) => (
+            <label
+              key={o}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 8px",
+                fontSize: 12.5,
+                color: "#E5E7F0",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={values.includes(o)}
+                onChange={() => toggle(o)}
+              />
+              {o}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================================
 // Main Component
 // ============================================================
@@ -377,9 +512,21 @@ export default function GenGDashboard() {
   // Filter states
   // ----------------------------------------------------------
   const [selectedYear, setSelectedYear] = useState("All");
-  const [selectedStage, setSelectedStage] = useState("All");
-  const [selectedTeam, setSelectedTeam] = useState("Gen.G");
-  const [selectedPlatform, setSelectedPlatform] = useState("All");
+  // Stage / Team / Platform은 다중 선택 (빈 배열 = All)
+  const [stageSel, setStageSel] = useState<string[]>([]);
+  const [teamSel, setTeamSel] = useState<string[]>(["Gen.G"]);
+  const [platformSel, setPlatformSel] = useState<string[]>([]);
+  const inSel = (sel: string[], v: string) =>
+    sel.length === 0 || sel.includes(v);
+
+  // 구단이 정확히 1개 선택됐을 때만 단일 구단 UI(순위·노트)를 사용
+  const selectedTeam = teamSel.length === 1 ? teamSel[0] : "All";
+  const teamLabel =
+    teamSel.length === 0
+      ? "All Teams"
+      : teamSel.length === 1
+      ? teamSel[0]
+      : `선택 ${teamSel.length}개 구단`;
   const [selectedChannelTypeFinal, setSelectedChannelTypeFinal] =
     useState("Official-Limit");
   const [selectedLocalGlobal, setSelectedLocalGlobal] =
@@ -477,16 +624,13 @@ export default function GenGDashboard() {
         cleanValue(r.Year) === selectedYear;
 
       const stageMatch =
-        selectedStage === "All" ||
-        cleanValue(r.Stage) === selectedStage;
+        inSel(stageSel, cleanValue(r.Stage));
 
       const teamMatch =
-        selectedTeam === "All" ||
-        cleanValue(r.Team_Full) === selectedTeam;
+        inSel(teamSel, cleanValue(r.Team_Full));
 
       const platformMatch =
-        selectedPlatform === "All" ||
-        cleanValue(r.Platform) === selectedPlatform;
+        inSel(platformSel, cleanValue(r.Platform));
 
       const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -508,9 +652,9 @@ export default function GenGDashboard() {
     data,
     selectedLocalGlobal,
     selectedYear,
-    selectedStage,
-    selectedTeam,
-    selectedPlatform,
+    stageSel,
+    teamSel,
+    platformSel,
     selectedChannelTypeFinal,
   ]);
 
@@ -563,8 +707,7 @@ export default function GenGDashboard() {
       // Stage 조건
       if (
         excludedFilter !== "stage" &&
-        selectedStage !== "All" &&
-        stage !== selectedStage
+        !inSel(stageSel, stage)
       ) {
         return false;
       }
@@ -572,8 +715,7 @@ export default function GenGDashboard() {
       // Team 조건
       if (
         excludedFilter !== "team" &&
-        selectedTeam !== "All" &&
-        team !== selectedTeam
+        !inSel(teamSel, team)
       ) {
         return false;
       }
@@ -581,8 +723,7 @@ export default function GenGDashboard() {
       // Platform 조건
       if (
         excludedFilter !== "platform" &&
-        selectedPlatform !== "All" &&
-        platform !== selectedPlatform
+        !inSel(platformSel, platform)
       ) {
         return false;
       }
@@ -733,9 +874,9 @@ export default function GenGDashboard() {
   }, [
     data,
     selectedYear,
-    selectedStage,
-    selectedTeam,
-    selectedPlatform,
+    stageSel,
+    teamSel,
+    platformSel,
     selectedChannelTypeFinal,
     selectedLocalGlobal,
   ]);
@@ -758,26 +899,13 @@ export default function GenGDashboard() {
       setSelectedYear("All");
     }
 
-    if (
-      selectedStage !== "All" &&
-      !dynamicFilterOptions.stages.includes(selectedStage)
-    ) {
-      setSelectedStage("All");
-    }
-
-    if (
-      selectedTeam !== "All" &&
-      !dynamicFilterOptions.teams.includes(selectedTeam)
-    ) {
-      setSelectedTeam("All");
-    }
-
-    if (
-      selectedPlatform !== "All" &&
-      !dynamicFilterOptions.platforms.includes(selectedPlatform)
-    ) {
-      setSelectedPlatform("All");
-    }
+    const prune = (sel: string[], options: string[], set) => {
+      const next = sel.filter((v) => options.includes(v));
+      if (next.length !== sel.length) set(next);
+    };
+    prune(stageSel, dynamicFilterOptions.stages, setStageSel);
+    prune(teamSel, dynamicFilterOptions.teams, setTeamSel);
+    prune(platformSel, dynamicFilterOptions.platforms, setPlatformSel);
 
     if (
       selectedChannelTypeFinal !== "All" &&
@@ -803,9 +931,9 @@ export default function GenGDashboard() {
   // ==========================================================
   const resetFilters = () => {
     setSelectedYear("All");
-    setSelectedStage("All");
-    setSelectedTeam("All");
-    setSelectedPlatform("All");
+    setStageSel([]);
+    setTeamSel([]);
+    setPlatformSel([]);
     setSelectedChannelTypeFinal("Official-Limit");
     setSelectedLocalGlobal("All");
     setSelectedMinViewers("All");
@@ -821,12 +949,10 @@ export default function GenGDashboard() {
         cleanValue(r.Year) === selectedYear;
 
       const stageMatch =
-        selectedStage === "All" ||
-        cleanValue(r.Stage) === selectedStage;
+        inSel(stageSel, cleanValue(r.Stage));
 
       const platformMatch =
-        selectedPlatform === "All" ||
-        cleanValue(r.Platform) === selectedPlatform;
+        inSel(platformSel, cleanValue(r.Platform));
 
       const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -847,8 +973,8 @@ export default function GenGDashboard() {
     data,
     selectedLocalGlobal,
     selectedYear,
-    selectedStage,
-    selectedPlatform,
+    stageSel,
+    platformSel,
     selectedChannelTypeFinal,
   ]);
 
@@ -908,8 +1034,7 @@ export default function GenGDashboard() {
     const getHalfYearData = (year: string) => {
       return data.filter((r) => {
         const platformMatch =
-          selectedPlatform === "All" ||
-          cleanValue(r.Platform) === selectedPlatform;
+          inSel(platformSel, cleanValue(r.Platform));
 
         const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -998,7 +1123,7 @@ export default function GenGDashboard() {
       .sort((a, b) => b.y2026 - a.y2026);
   }, [
     data,
-    selectedPlatform,
+    platformSel,
     selectedChannelTypeFinal,
     selectedLocalGlobal,
   ]);
@@ -1013,8 +1138,7 @@ export default function GenGDashboard() {
         cleanValue(r.Year) === selectedYear;
 
       const platformMatch =
-        selectedPlatform === "All" ||
-        cleanValue(r.Platform) === selectedPlatform;
+        inSel(platformSel, cleanValue(r.Platform));
 
       const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -1024,8 +1148,7 @@ export default function GenGDashboard() {
         getLocalGlobalVal(r) === selectedLocalGlobal;
 
       const teamMatch =
-        selectedTeam === "All" ||
-        cleanValue(r.Team_Full) === selectedTeam;
+        inSel(teamSel, cleanValue(r.Team_Full));
 
       return (
         yearMatch &&
@@ -1053,10 +1176,7 @@ export default function GenGDashboard() {
     };
 
     return {
-      team:
-        selectedTeam === "All"
-          ? "All Teams"
-          : selectedTeam,
+      team: teamLabel,
 
       "LCK Cup": getStageAvg("LCK Cup"),
       "Split 1": getStageAvg("Split 1"),
@@ -1073,9 +1193,9 @@ export default function GenGDashboard() {
     };
   }, [
     data,
-    selectedTeam,
+    teamSel,
     selectedYear,
-    selectedPlatform,
+    platformSel,
     selectedChannelTypeFinal,
     selectedLocalGlobal,
   ]);
@@ -1098,12 +1218,10 @@ export default function GenGDashboard() {
         data
           .filter((r) => {
             const teamMatch =
-              selectedTeam === "All" ||
-              cleanValue(r.Team_Full) === selectedTeam;
+              inSel(teamSel, cleanValue(r.Team_Full));
 
             const platformMatch =
-              selectedPlatform === "All" ||
-              cleanValue(r.Platform) === selectedPlatform;
+              inSel(platformSel, cleanValue(r.Platform));
 
             const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -1146,8 +1264,8 @@ export default function GenGDashboard() {
     ].filter((d) => d.value > 0);
   }, [
     data,
-    selectedTeam,
-    selectedPlatform,
+    teamSel,
+    platformSel,
     selectedChannelTypeFinal,
     selectedLocalGlobal,
   ]);
@@ -1200,16 +1318,14 @@ export default function GenGDashboard() {
   const PLATFORM_DATA = useMemo(() => {
     const baseRows = data.filter((r) => {
       const teamMatch =
-        selectedTeam === "All" ||
-        cleanValue(r.Team_Full) === selectedTeam;
+        inSel(teamSel, cleanValue(r.Team_Full));
 
       const yearMatch =
         selectedYear === "All" ||
         cleanValue(r.Year) === selectedYear;
 
       const stageMatch =
-        selectedStage === "All" ||
-        cleanValue(r.Stage) === selectedStage;
+        inSel(stageSel, cleanValue(r.Stage));
 
       const channelTypeFinalMatch =
         matchesChannelTypeFinal(r);
@@ -1256,9 +1372,9 @@ export default function GenGDashboard() {
       .sort((a, b) => b.avg - a.avg);
   }, [
     data,
-    selectedTeam,
+    teamSel,
     selectedYear,
-    selectedStage,
+    stageSel,
     selectedChannelTypeFinal,
     selectedLocalGlobal,
   ]);
@@ -1435,25 +1551,25 @@ export default function GenGDashboard() {
               onChange={setSelectedYear}
             />
 
-            <FilterSelect
+            <MultiSelect
               label="Stage"
-              value={selectedStage}
+              values={stageSel}
               options={dynamicFilterOptions.stages}
-              onChange={setSelectedStage}
+              onChange={setStageSel}
             />
 
-            <FilterSelect
+            <MultiSelect
               label="Team"
-              value={selectedTeam}
+              values={teamSel}
               options={dynamicFilterOptions.teams}
-              onChange={setSelectedTeam}
+              onChange={setTeamSel}
             />
 
-            <FilterSelect
+            <MultiSelect
               label="Platform"
-              value={selectedPlatform}
+              values={platformSel}
               options={dynamicFilterOptions.platforms}
-              onChange={setSelectedPlatform}
+              onChange={setPlatformSel}
             />
 
             <FilterSelect
@@ -1627,14 +1743,14 @@ export default function GenGDashboard() {
           }}
         >
           {TEAM_SUMMARY.map((t) => {
-            const active = t.team === selectedTeam;
+            const active = teamSel.includes(t.team);
             const gold = isGenG(t.team);
 
             return (
               <button
                 key={t.team}
                 onClick={() =>
-                  setSelectedTeam(t.team)
+                  setTeamSel([t.team])
                 }
                 style={{
                   flex: "0 0 auto",
@@ -1716,7 +1832,7 @@ export default function GenGDashboard() {
           <StatBlock
             label={
               selectedTeam === "All"
-                ? "전체 구단"
+                ? (teamSel.length > 1 ? `선택 ${teamSel.length}개 구단` : "전체 구단")
                 : `${selectedTeam} 순위`
             }
             value={
@@ -1768,7 +1884,7 @@ export default function GenGDashboard() {
             label="리그평균 대비"
             value={
               selectedTeam === "All"
-                ? "0.0%"
+                ? (teamSel.length > 1 ? "-" : "0.0%")
                 : selectedTeamData.rank
                 ? `${
                     selectedTeamData.vsLeague > 0
