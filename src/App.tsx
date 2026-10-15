@@ -241,6 +241,21 @@ function SectionLabel({ index, title }) {
   );
 }
 
+function SectionNote({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 11.5,
+        color: TEXT_DIM,
+        lineHeight: 1.6,
+        margin: "-8px 0 14px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function StatBlock({ label, value, sub, accent }) {
   return (
     <div style={{ flex: 1, minWidth: 150 }}>
@@ -2022,6 +2037,14 @@ export default function GenGDashboard() {
           title="상반기 동일기간 비교 (2025 상반기 vs 2026 상반기)"
         />
 
+        <SectionNote>
+          Year·Stage 필터와 무관하게 상반기 4개 스테이지(LCK Cup · Split 1 ·
+          Split 2 Regular Season · Split 2 Road to MSI)로 고정됩니다.
+          2025와 2026은 수집 채널 구성이 달라(2026 데이터에는 한국어 YouTube가
+          없고, 소규모·한국어 플랫폼 구성도 다름) 연도 간 증감률은 실제 시청자
+          변화를 그대로 반영하지 않을 수 있습니다.
+        </SectionNote>
+
         <div
           style={{
             background: PANEL,
@@ -2132,6 +2155,14 @@ export default function GenGDashboard() {
           index="03"
           title="연도별 상반기 전체 시청자 트렌드"
         />
+
+        <SectionNote>
+          Year·Stage 필터와 무관하게 상반기 4개 스테이지(LCK Cup · Split 1 ·
+          Split 2 Regular Season · Split 2 Road to MSI)로 고정됩니다.
+          2025와 2026은 수집 채널 구성이 달라(2026 데이터에는 한국어 YouTube가
+          없고, 소규모·한국어 플랫폼 구성도 다름) 연도 간 증감률은 실제 시청자
+          변화를 그대로 반영하지 않을 수 있습니다.
+        </SectionNote>
 
         <div
           style={{
