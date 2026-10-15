@@ -369,7 +369,7 @@ function FilterSelect({ label, value, options, onChange }) {
 // Main Component
 // ============================================================
 export default function GenGDashboard() {
-  const [data, setData] = useState<DashboardRow[]>([]);
+  const [rawData, setData] = useState<DashboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -384,6 +384,15 @@ export default function GenGDashboard() {
     useState("Official-Limit");
   const [selectedLocalGlobal, setSelectedLocalGlobal] =
     useState("All");
+  // 최소 시청자 컷오프 (행 단위 Avg_Viewers 기준, 민감도 확인용)
+  const [selectedMinViewers, setSelectedMinViewers] = useState("All");
+
+  // 컷오프를 맨 앞단에서 한 번만 적용 → 아래 모든 계산이 이 data를 사용
+  const data = useMemo(() => {
+    if (selectedMinViewers === "All") return rawData;
+    const min = Number(selectedMinViewers);
+    return rawData.filter((r) => toNumber(r.Avg_Viewers) >= min);
+  }, [rawData, selectedMinViewers]);
 
   // ----------------------------------------------------------
   // Channel Type helper
@@ -799,6 +808,7 @@ export default function GenGDashboard() {
     setSelectedPlatform("All");
     setSelectedChannelTypeFinal("Official-Limit");
     setSelectedLocalGlobal("All");
+    setSelectedMinViewers("All");
   };
 
   // ==========================================================
@@ -1463,7 +1473,28 @@ export default function GenGDashboard() {
               }
               onChange={setSelectedLocalGlobal}
             />
+
+            <FilterSelect
+              label="Min Viewers (row)"
+              value={selectedMinViewers}
+              options={["All", "1000", "3000"]}
+              onChange={setSelectedMinViewers}
+            />
           </div>
+
+          {selectedMinViewers !== "All" && (
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 11.5,
+                color: GOLD,
+                lineHeight: 1.6,
+              }}
+            >
+              ⚠ 행 단위 평균 동시시청자 {Number(selectedMinViewers).toLocaleString("ko-KR")}명 미만 행을 제외한 민감도 확인용 보기입니다.
+              보고서 수치(All 기준)와 다르며, 2026 데이터에는 한국어 YouTube가 없어 연도 간 비교는 여전히 주의가 필요합니다.
+            </div>
+          )}
 
           {/* CHANNEL TYPE 설명 캡션 */}
           <div
