@@ -1271,11 +1271,11 @@ export default function GenGDashboard() {
 
     return [
       {
-        year: "2025 국내 전체",
+        year: "2025 LCK 전체",
         value: getFirstHalfAvg("2025"),
       },
       {
-        year: "2026 국내 전체",
+        year: "2026 LCK 전체",
         value: getFirstHalfAvg("2026"),
       },
     ].filter((d) => d.value > 0);
@@ -2036,11 +2036,11 @@ export default function GenGDashboard() {
         {/* 02 HALF-YEAR */}
         <SectionLabel
           index="02"
-          title="국내 전체 시즌 비교 (2025 vs 2026 Split 3까지)"
+          title="LCK 전체 시즌 비교 (2025 vs 2026 Split 3까지)"
         />
 
         <SectionNote>
-          Year·Stage 필터와 무관하게 국내 5개 스테이지(LCK Cup · Split 1 ·
+          Year·Stage 필터와 무관하게 LCK 5개 스테이지(LCK Cup · Split 1 ·
           Split 2 Regular Season · Split 2 Road to MSI · Split 3)로 고정됩니다.
           2025와 2026은 수집 채널 구성이 달라(2026 데이터에는 한국어 YouTube가
           없고, 소규모·한국어 플랫폼 구성도 다름) 연도 간 증감률은 실제 시청자
@@ -2113,7 +2113,7 @@ export default function GenGDashboard() {
 
               <Bar
                 dataKey="y2025"
-                name="2025 국내 전체"
+                name="2025 LCK 전체"
                 radius={[3, 3, 0, 0]}
               >
                 {HALF_YEAR_COMPARE.map(
@@ -2132,7 +2132,7 @@ export default function GenGDashboard() {
 
               <Bar
                 dataKey="y2026"
-                name="2026 국내 전체"
+                name="2026 LCK 전체"
                 radius={[3, 3, 0, 0]}
               >
                 {HALF_YEAR_COMPARE.map(
@@ -2155,11 +2155,11 @@ export default function GenGDashboard() {
         {/* 03 TREND */}
         <SectionLabel
           index="03"
-          title="연도별 국내 전체 시청자 트렌드"
+          title="연도별 LCK 전체 시청자 트렌드"
         />
 
         <SectionNote>
-          Year·Stage 필터와 무관하게 국내 5개 스테이지(LCK Cup · Split 1 ·
+          Year·Stage 필터와 무관하게 LCK 5개 스테이지(LCK Cup · Split 1 ·
           Split 2 Regular Season · Split 2 Road to MSI · Split 3)로 고정됩니다.
           2025와 2026은 수집 채널 구성이 달라(2026 데이터에는 한국어 YouTube가
           없고, 소규모·한국어 플랫폼 구성도 다름) 연도 간 증감률은 실제 시청자
@@ -2223,7 +2223,7 @@ export default function GenGDashboard() {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  name="국내 평균 동시시청자"
+                  name="LCK 평균 동시시청자"
                   stroke={RED}
                   strokeWidth={2.5}
                   dot={{
