@@ -21,7 +21,7 @@ import Papa from "papaparse";
 // Google Sheets
 // ============================================================
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSSMiO-mr7gpLXGsPtZdsBIRjvFyTRzs2WSqnISb0gxSleiZJUY6Qgi1wumo9p9tN3ljmYKlyrwf4iS/pub?gid=1973859034&single=true&output=csv";
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfG1R8LTq5g5iSro0ojOqporiPpO5qoruyn4dmcsxymhPycpViXbsOgLZfLzWuETZ6lMMPLhBXX2ED/pub?gid=1973859034&single=true&output=csv";
 
 // ============================================================
 // 타입
@@ -1475,7 +1475,7 @@ export default function GenGDashboard() {
                   "ui-monospace, monospace",
               }}
             >
-              LCK VIEWERSHIP (2025 전체 · 2026 상반기)
+              LCK VIEWERSHIP (2025 전체 · 2026 Split 3까지)
             </div>
 
             <h1
@@ -1502,7 +1502,7 @@ export default function GenGDashboard() {
           >
             Interactive Dashboard (Dynamic Cascading Active)
             <br />
-            2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
+            2025년 전체 시즌 · 2026년 Split 3(09.13)까지 LCK · Worlds(2025) · MSI 통합 데이터 기준 (2026 Worlds·First Stand 미포함)
           </div>
         </div>
 
@@ -2585,7 +2585,7 @@ export default function GenGDashboard() {
             lineHeight: 1.8,
           }}
         >
-          2025년 전체 시즌 · 2026년 상반기(Road to MSI까지) LCK · Worlds · MSI 통합 데이터 기준
+          2025년 전체 시즌 · 2026년 Split 3(09.13)까지 LCK · Worlds(2025) · MSI 통합 데이터 기준 (2026 Worlds·First Stand 미포함)
           <br />
           모든 수치는 연결된 Google Sheets 실시간 데이터를 기준으로 자동 계산됩니다.
         </div>
