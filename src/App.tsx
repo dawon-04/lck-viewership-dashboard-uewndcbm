@@ -96,42 +96,52 @@ const TEAM_NOTES = {
   "Gen.G": {
     nameKo: "젠지",
     note: "2018년 KSV e스포츠가 삼성 갤럭시 로스터와 LCK 자리를 인수하며 리브랜딩. 2024·2025 MSI 연속 우승, 2025 LCK 시즌 챔피언.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 23,943명, 3위, 2025 대비 -17.5%. 2026 LCK 시즌 챔피언. 2026 Worlds 출전, 결승 진출.",
   },
   "T1": {
     nameKo: "T1",
     note: "1999년 SK텔레콤 T1으로 창단, 2019년 T1으로 사명 변경. 롤드컵 4회 우승(2013·2015·2016·2023)으로 역대 최다 우승 구단.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 38,069명, 1위, 2025 대비 -17.7%. LCK 전체 평균 시청자 1위 유지. 2026 Worlds 출전.",
   },
   "Hanwha Life Esports": {
     nameKo: "한화생명e스포츠",
     note: "구 ROX Tigers. 2018년 한화생명이 로스터와 LCK 자리를 인수해 리브랜딩. 2024 LCK 서머, 2025 LCK Cup·First Stand 우승.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 28,326명, 2위, 2025 대비 -3.6%. 감소한 9개 구단 중 감소폭이 가장 작음. 2026 Worlds 출전.",
   },
   "kt Rolster": {
     nameKo: "kt 롤스터",
     note: "1999년 창단, KT가 스폰서인 국내 최장수 e스포츠 구단 중 하나.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 18,569명, 5위, 2025 대비 -15.3%. 순위가 4위에서 5위로 내려가 Dplus Kia와 서로 바뀜.",
   },
   "Dplus Kia": {
     nameKo: "디플러스 기아",
     note: "2017년 DAMWON Gaming으로 창단 → 2021년 DWG KIA → 2023년 Dplus Kia로 명칭 변경. 2020 롤드컵 우승.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 19,322명, 4위, 2025 대비 -8.4%. 순위가 5위에서 4위로 올라 kt Rolster와 서로 바뀜. 2026 Worlds 출전.",
   },
   "Nongshim RedForce": {
     nameKo: "농심 레드포스",
     note: "구 Team Dynamics. 2020년 농심이 인수해 리브랜딩. 팀명·로고는 농심 신라면 브랜드에서 착안.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 13,004명, 7위, 2025 대비 -28.5%. 10개 구단 중 감소폭이 가장 큼. 순위는 6위에서 7위.",
   },
   "BNK FEARX": {
     nameKo: "BNK 피어엑스",
     note: "Team BattleComics → SANDBOX Gaming(2018) → Liiv SANDBOX(2020, KB국민은행) → FearX(2024) → BNK FearX(2024) 순으로 리브랜딩.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 15,096명, 6위, 2025 대비 +2.8%. 10개 구단 중 유일하게 증가. 순위는 9위에서 6위로 3계단 상승.",
   },
   "KIWOOM DRX": {
     nameKo: "키움 DRX",
     note: "Incredible Miracle(2012) → Longzhu Gaming → Kingzone DragonX(2018) → DragonX(2019) → DRX(2020) → 2026년 키움증권 스폰서십. 2022 롤드컵 우승.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 12,823명, 8위, 2025 대비 -19.9%. 순위는 7위에서 8위.",
   },
   "HANJIN BRION": {
     nameKo: "한진 브리온",
     note: "Team BRION → Fredit BRION → OK저축은행 브리온 → 2026년 한진 스폰서십.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 12,401명, 9위, 2025 대비 -15.7%. 순위는 8위에서 9위.",
   },
   "DN SOOPers": {
     nameKo: "DN 수퍼스",
     note: "광동 프릭스 → DN Freecs → DN SOOPers 순으로 리브랜딩.",
+    status: "2026 LCK 전체(Split 3 포함) 평균 11,660명, 10위, 2025 대비 -19.9%. 10위 유지.",
   },
 };
 
@@ -1743,6 +1753,29 @@ export default function GenGDashboard() {
                   }}
                 >
                   {TEAM_NOTES[selectedTeam].note}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    color: GOLD,
+                    lineHeight: 1.6,
+                    marginTop: 8,
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>
+                    2026 시즌 현황 ·{" "}
+                  </span>
+                  {TEAM_NOTES[selectedTeam].status}
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: TEXT_DIM,
+                      marginTop: 2,
+                    }}
+                  >
+                    Official-Limit, 행 단위 평균 기준 (2026 Worlds 제외)
+                  </div>
                 </div>
               </div>
             </div>
