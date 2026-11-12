@@ -683,6 +683,20 @@ export default function GenGDashboard() {
     selectedChannelTypeFinal,
   ]);
 
+  // Min Viewers 컷오프 전/후 행 수 (현재 선택된 모든 필터 적용, 컷오프만 비교)
+  const rowCounts = useMemo(() => {
+    const passes = (r) =>
+      (selectedYear === "All" || cleanValue(r.Year) === selectedYear) &&
+      inSel(stageSel, cleanValue(r.Stage)) &&
+      inSel(teamSel, cleanValue(r.Team_Full)) &&
+      inSel(platformSel, cleanValue(r.Platform)) &&
+      matchesChannelTypeFinal(r) &&
+      (selectedLocalGlobal === "All" || getLocalGlobalVal(r) === selectedLocalGlobal);
+    const total = rawData.filter(passes).length;
+    const kept = filteredData.length;
+    return { total, kept, excluded: total - kept };
+  }, [rawData, filteredData, selectedLocalGlobal, selectedYear, stageSel, teamSel, platformSel, selectedChannelTypeFinal]);
+
   // ==========================================================
   // DYNAMIC CASCADING FILTER OPTIONS
   //
@@ -1623,6 +1637,12 @@ export default function GenGDashboard() {
               options={["All", "1000", "3000"]}
               onChange={setSelectedMinViewers}
             />
+          </div>
+
+          <div style={{ marginTop: 12, fontSize: 11.5, color: selectedMinViewers === "All" ? TEXT_DIM : GOLD, fontWeight: 700, lineHeight: 1.6 }}>
+            {selectedMinViewers === "All"
+              ? <>현재 필터 기준 {rowCounts.total.toLocaleString("ko-KR")}행 (Min Viewers 제외 없음)</>
+              : <>현재 필터 기준 {rowCounts.total.toLocaleString("ko-KR")}행 중 {rowCounts.excluded.toLocaleString("ko-KR")}행 제외 ({rowCounts.total ? ((rowCounts.excluded / rowCounts.total) * 100).toFixed(1) : "0.0"}%) → {rowCounts.kept.toLocaleString("ko-KR")}행 사용</>}
           </div>
 
           {selectedMinViewers !== "All" && (
